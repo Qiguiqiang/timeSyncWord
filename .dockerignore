@@ -1,0 +1,12 @@
+# TimeSyncWord
+# Version 1.0.0
+
+node_modules/
+npm-debug.log*
+.env
+certs/
+.git/
+*.md
+docs/
+scripts/setup-server.sh
+scripts/generate-ssl.sh

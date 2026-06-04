@@ -1,0 +1,17 @@
+{
+  "name": "timesyncword",
+  "version": "1.0.0",
+  "description": "Browser-based high-precision time synchronization via NTP-weighted clock",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "keywords": ["time-sync", "ntp", "synchronization", "browser"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.16.0",
+    "express": "^4.18.2"
+  }
+}

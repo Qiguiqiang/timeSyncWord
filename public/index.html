@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TimeSyncWord</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="scanlines"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="container">
+    <header class="header">
+      <h1 class="logo">TimeSyncWord</h1>
+      <div class="status" id="statusBar">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-label" id="statusLabel">INITIALIZING</span>
+      </div>
+    </header>
+
+    <div class="time-panel">
+      <div class="time-display">
+        <span class="time-main" id="currentTime">--:--:--</span>
+        <span class="time-ms" id="currentMs">.---</span>
+      </div>
+      <div class="time-meta">
+        <span class="meta-item" id="utcDisplay">UTC: --</span>
+        <span class="meta-divider">|</span>
+        <span class="meta-item" id="offsetDisplay">OFFSET: --</span>
+        <span class="meta-divider">|</span>
+        <span class="meta-item" id="rttDisplay">RTT: --</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">精度</div>
+        <div class="stat-value" id="precisionDisplay">--</div>
+        <div class="stat-unit">tier</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">偏移</div>
+        <div class="stat-value" id="offsetValue">--</div>
+        <div class="stat-unit">ms</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">延迟</div>
+        <div class="stat-value" id="rttValue">--</div>
+        <div class="stat-unit">ms</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">采样</div>
+        <div class="stat-value" id="sampleCount">0</div>
+        <div class="stat-unit">samples</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

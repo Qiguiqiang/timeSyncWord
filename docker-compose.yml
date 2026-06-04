@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  timesyncword:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: timesyncword
+    restart: unless-stopped
+    ports:
+      - "13013:13013"
+      - "13014:13014"
+    environment:
+      - NODE_ENV=production
+      - PORT=13013
+      - SSL_PORT=13014
+      - SSL_ENABLED=false
+      - TZ=UTC
+    volumes:
+      - ./certs:/app/certs:ro
+      - ./logs:/app/logs
+    cap_add:
+      - SYS_TIME
+      - NET_ADMIN
+    networks:
+      - timesync-network
+
+  # Optional: NTP-optimized system clock
+  # Uncomment if you need better NTP sync in Docker
+  # chrony:
+  #   image: cturra/ntp
+  #   container_name: timesync-ntp
+  #   restart: unless-stopped
+  #   cap_add:
+  #     - SYS_TIME
+  #     - NET_ADMIN
+  #   ports:
+  #     - "123:123/udp"
+  #   networks:
+  #     - timesync-network
+
+networks:
+  timesync-network:
+    driver: bridge
