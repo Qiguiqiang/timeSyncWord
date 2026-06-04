@@ -8,6 +8,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build ${{ matrix.os }}
@@ -52,19 +55,24 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: OpenTimeSync ${{ github.ref_name }}
-          generate_release_notes: true
-          files: |
-            opentimesync-ubuntu-latest/**/*
-            opentimesync-windows-latest/**/*
-            opentimesync-macos-latest/**/*
+      - name: Zip and Release
+        run: |
+          cd opentimesync-ubuntu-latest && tar -czf ../OpenTimeSync-linux-x64.tar.gz OpenTimeSync-linux-x64/ && cd ..
+          cd opentimesync-windows-latest && zip -r ../OpenTimeSync-win32-x64.zip OpenTimeSync-win32-x64/ && cd ..
+          cd opentimesync-macos-latest && tar -czf ../OpenTimeSync-darwin-x64.tar.gz OpenTimeSync-darwin-x64/ && cd ..
+          gh release create "${{ github.ref_name }}" \
+            --title "OpenTimeSync ${{ github.ref_name }}" \
+            --generate-notes \
+            OpenTimeSync-linux-x64.tar.gz \
+            OpenTimeSync-win32-x64.zip \
+            OpenTimeSync-darwin-x64.tar.gz \
+            --repo ${{ github.repository }} || \
+          gh release upload "${{ github.ref_name }}" \
+            OpenTimeSync-linux-x64.tar.gz \
+            OpenTimeSync-win32-x64.zip \
+            OpenTimeSync-darwin-x64.tar.gz \
+            --repo ${{ github.repository }} --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
