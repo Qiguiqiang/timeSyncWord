@@ -40,12 +40,7 @@
       <div class="time-meta">
         <span class="meta-item" id="utcDisplay" data-tooltip="协调世界时（UTC），国际标准时间参考">UTC: --</span>
         <span class="meta-divider">|</span>
-        <span class="meta-item" id="offsetDisplay" data-tooltip="本机系统时钟与NTP标准时间的偏差">偏差: --</span>
-        <span class="meta-divider">|</span>
-        <div class="tz-selector">
-          <span class="meta-item tz-label" id="tzDisplay">时区: UTC+8 Shanghai ▾</span>
-          <div class="tz-panel" id="tzPanel"></div>
-        </div>
+        <span class="meta-item" id="offsetDisplay" data-tooltip="服务器时间与客户端时间的差值（含网络延迟）">DIFF: --</span>
       </div>
     </div>
 
@@ -58,12 +53,12 @@
         </div>
         <div class="stat-unit">tier</div>
       </div>
-      <div class="stat-card" data-tooltip="本机系统时钟与NTP标准时间的偏差">
-        <div class="stat-label">偏差</div>
+      <div class="stat-card" data-tooltip="服务器时间与客户端时间的差值（ms）。负数=客户端慢，正数=客户端快。含网络单向延迟">
+        <div class="stat-label">时间差</div>
         <div class="stat-value" id="offsetValue">--</div>
         <div class="stat-unit">ms</div>
       </div>
-      <div class="stat-card ntp-card" id="ntpCard">
+      <div class="stat-card ntp-card" id="ntpCard" data-tooltip="点击切换NTP时间源服务器">
         <div class="stat-label">网络延迟</div>
         <div class="ntp-row">
           <span class="stat-value" id="ntpRttLabel">--</span>
@@ -74,6 +69,12 @@
           </span>
         </div>
         <div class="ntp-panel" id="ntpPanel"></div>
+      </div>
+      <div class="stat-card tz-card" id="tzCard" data-tooltip="点击切换时区">
+        <div class="stat-label">时区</div>
+        <div class="stat-value" id="tzValue">--</div>
+        <div class="stat-unit" id="tzSub">--</div>
+        <div class="tz-panel" id="tzPanel"></div>
       </div>
       <div class="stat-card" data-tooltip="最近20次同步测量的样本缓冲区。样本越多，抗网络波动能力越强">
         <div class="stat-label">采样</div>

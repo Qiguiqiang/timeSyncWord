@@ -8,10 +8,10 @@
   "scripts": {
     "start": "node server/index.js",
     "electron": "node -e \"try{require('child_process').execSync('taskkill /f /im OpenTimeSync.exe 2>nul',{stdio:'ignore'})}catch(e){}\" && electron .",
-    "build:win": "npx @electron/packager . OpenTimeSync --platform=win32 --arch=x64 --out=dist --overwrite",
-    "build:mac": "npx @electron/packager . OpenTimeSync --platform=darwin --arch=x64 --out=dist --overwrite",
+    "build:win": "node -e \"const fs=require('fs'),sharp=require('sharp');(async()=>{const s=[16,32,48,64,128,256];const d=[];for(const w of s){const{data}=await sharp('build/icon.png').resize(w,w).raw().toBuffer({resolveWithObject:true});const h=Buffer.alloc(40);h.writeUInt32LE(40,0);h.writeInt32LE(w,4);h.writeInt32LE(w*2,8);h.writeUInt16LE(1,12);h.writeUInt16LE(32,14);h.writeUInt32LE(0,16);h.writeUInt32LE(data.length,20);const p=Buffer.alloc(data.length);for(let i=0;i<data.length;i+=4){p[i]=data[i+2];p[i+1]=data[i+1];p[i+2]=data[i];p[i+3]=data[i+3]}d.push({w,data:Buffer.concat([h,p])})}const hd=Buffer.alloc(6);hd.writeUInt16LE(0,0);hd.writeUInt16LE(1,2);hd.writeUInt16LE(s.length,4);let o=6+s.length*16;const e=[];for(const c of d){const en=Buffer.alloc(16);en.writeUInt8(c.w>=256?0:c.w,0);en.writeUInt8(c.w>=256?0:c.w,1);en.writeUInt8(0,2);en.writeUInt8(0,3);en.writeUInt16LE(1,4);en.writeUInt16LE(32,6);en.writeUInt32LE(c.data.length,8);en.writeUInt32LE(o,12);o+=c.data.length;e.push(en)}fs.writeFileSync('build/icon.ico',Buffer.concat([hd,...e,...d.map(x=>x.data)]));console.log('ico ready')})()\" && npx @electron/packager . OpenTimeSync --platform=win32 --arch=x64 --out=dist --overwrite --icon=build/icon && node -e \"require('child_process').execFileSync('node_modules/rcedit/bin/rcedit-x64.exe',['dist/OpenTimeSync-win32-x64/OpenTimeSync.exe','--set-icon','build/icon.ico'])\"",
+    "build:mac": "npx @electron/packager . OpenTimeSync --platform=darwin --arch=x64 --out=dist --overwrite --icon=build/icon",
     "build:linux": "npx @electron/packager . OpenTimeSync --platform=linux --arch=x64 --out=dist --overwrite",
-    "build:all": "npx @electron/packager . OpenTimeSync --platform=all --arch=x64 --out=dist --overwrite"
+    "build:all": "npx @electron/packager . OpenTimeSync --platform=all --arch=x64 --out=dist --overwrite --icon=build/icon"
   },
   "build": {
     "appId": "com.opentimesync.app",
@@ -69,6 +69,8 @@
   "devDependencies": {
     "electron": "^35.1.2",
     "electron-builder": "^25.1.8",
+    "png-to-ico": "^3.0.1",
+    "rcedit": "^5.0.2",
     "sharp": "^0.34.5"
   }
 }

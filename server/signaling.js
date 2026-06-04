@@ -15,6 +15,7 @@ function handleConnection(wss) {
       t2: Date.now(),
       ntpServer: status.activeServer,
       ntpRtt: status.activeRtt,
+      ntpOffset: status.avgOffset,
       serverLatencies: status.serverLatencies
     });
 
@@ -33,6 +34,7 @@ function handleConnection(wss) {
       t2: Date.now(),
       ntpServer: status.activeServer,
       ntpRtt: status.activeRtt,
+      ntpOffset: status.avgOffset,
       serverLatencies: status.serverLatencies
     }));
 

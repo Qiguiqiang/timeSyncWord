@@ -11,10 +11,8 @@ const DOM = {
   sampleCount: document.getElementById('sampleCount'),
   statusDot: document.getElementById('statusDot'),
   statusLabel: document.getElementById('statusLabel'),
+  tzDisplay: document.getElementById('tzDisplay'),
   tzPanel: document.getElementById('tzPanel'),
-  tzValue: document.getElementById('tzValue'),
-  tzSub: document.getElementById('tzSub'),
-  tzCard: document.getElementById('tzCard'),
   ntpName: document.getElementById('ntpName'),
   ntpRttLabel: document.getElementById('ntpRttLabel'),
   ntpPanel: document.getElementById('ntpPanel'),
@@ -55,14 +53,13 @@ const State = {
   syncBase: 0,
   perfBase: 0,
   offsetStd: 0,
-  rtt: 0,
+  ntpOffset: 0,
   timezone: '',
   ntpServer: 'ntp.tencent.com',
   ntpRtt: -1,
   serverLatencies: {}
 };
 
-// ── 标准差计算 ──
 function calculateStdDev(arr) {
   if (arr.length < 2) return 0;
   const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -70,7 +67,6 @@ function calculateStdDev(arr) {
   return Math.sqrt(variance);
 }
 
-// ── 精度等级（基于 offsetStd） ──
 function getPrecisionTier() {
   const { offsetStd } = State;
   if (offsetStd < 2)   return 'S+';
@@ -88,20 +84,17 @@ function getPrecisionClass(tier) {
   return 'danger';
 }
 
-// ── WebSocket 连接 ──
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   State.ws = new WebSocket(`${proto}//${location.host}`);
 
   State.ws.onopen = () => {
     setStatus('connecting', 'CONNECTED');
-    startRttMeasurement();
   };
 
   State.ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
     if (msg.type === 'time') handleTime(msg);
-    if (msg.type === 'timeResponse') handleTimeResponse(msg);
     if (msg.type === 'ntpServerChanged') handleNtpChange(msg);
   };
 
@@ -119,7 +112,6 @@ function send(data) {
   }
 }
 
-// ── 广播模式：服务器推送时间 ──
 function handleTime(msg) {
   const T2 = msg.serverTime;
   const T3 = Date.now();
@@ -128,6 +120,7 @@ function handleTime(msg) {
   State.samples.push(offset);
   if (State.samples.length > State.maxSamples) State.samples.shift();
 
+  State.ntpOffset = msg.ntpOffset !== undefined ? msg.ntpOffset : 0;
   if (msg.ntpServer) State.ntpServer = msg.ntpServer;
   if (msg.ntpRtt !== undefined) State.ntpRtt = msg.ntpRtt;
   if (msg.serverLatencies) State.serverLatencies = msg.serverLatencies;
@@ -136,36 +129,14 @@ function handleTime(msg) {
   updateUI();
 }
 
-// ── RTT 响应处理 ──
-function handleTimeResponse(msg) {
-  const rtt = Date.now() - msg.t1;
-  State.rtt = rtt;
-}
-
-// ── 周期性 RTT 测量（每30秒） ──
-let rttInterval = null;
-function startRttMeasurement() {
-  // 立即测量一次
-  send({ type: 'getTime', t1: Date.now() });
-
-  // 每30秒测量一次
-  rttInterval = setInterval(() => {
-    send({ type: 'getTime', t1: Date.now() });
-  }, 30000);
-}
-
 function calculateOffset() {
   if (State.samples.length < 3) { State.isSynced = false; return; }
 
-  // 过滤异常值（去掉最高/最低 10%）
   const sorted = [...State.samples].sort((a, b) => a - b);
   const cutoff = Math.floor(sorted.length * 0.1);
   const filtered = sorted.slice(cutoff, sorted.length - cutoff);
 
-  // 简单平均
   State.offset = filtered.reduce((a, b) => a + b, 0) / filtered.length;
-
-  // 计算标准差
   State.offsetStd = calculateStdDev(filtered);
 
   State.syncBase = Date.now() + State.offset;
@@ -175,13 +146,9 @@ function calculateOffset() {
 
 function getSyncTime() { return State.syncBase + (performance.now() - State.perfBase); }
 
-// ── UI 更新 ──
 function updateUI() {
-  DOM.offsetDisplay.textContent = `DIFF: ${State.offset.toFixed(2)}ms`;
-
-  DOM.offsetValue.textContent = State.offset.toFixed(2);
-  const absOffset = Math.abs(State.offset);
-  DOM.offsetValue.className = 'stat-value ' + cls(absOffset, 5, 20);
+  const offsetText = State.ntpOffset.toFixed(2);
+  DOM.offsetDisplay.textContent = `偏差: ${offsetText}ms`;
 
   const tier = getPrecisionTier();
   DOM.precisionTier.textContent = tier;
@@ -189,9 +156,11 @@ function updateUI() {
   DOM.precisionError.textContent = `±${State.offsetStd.toFixed(2)}ms`;
   DOM.sampleCount.textContent = State.samples.length;
 
+  DOM.offsetValue.textContent = offsetText;
+  DOM.offsetValue.className = 'stat-value ' + cls(Math.abs(State.ntpOffset), 5, 20);
+
   setStatus('synced', `SYNCED ±${State.offset.toFixed(1)}ms`);
 
-  // NTP 卡片 — 左边延迟大号绿色，右边服务商名+▾可切换
   const activeNtp = NTP_SERVERS.find(s => s.host === State.ntpServer);
   const ntpLabel = activeNtp ? activeNtp.name : State.ntpServer;
   DOM.ntpRttLabel.textContent = State.ntpRtt > 0 ? State.ntpRtt : '--';
@@ -218,7 +187,6 @@ function handleNtpChange(msg) {
   renderNtpList();
 }
 
-// ── NTP 服务器选择器 ──
 function setNtp(host) {
   send({ type: 'setNtpServer', server: host });
   DOM.ntpPanel.classList.remove('open');
@@ -241,13 +209,6 @@ function renderNtpList() {
   DOM.ntpPanel.querySelectorAll('.ntp-item').forEach(el => {
     el.addEventListener('click', () => setNtp(el.dataset.ntp));
   });
-}
-
-function toggleNtpPanel() {
-  DOM.ntpPanel.classList.toggle('open');
-  if (DOM.ntpPanel.classList.contains('open')) {
-    renderNtpList();
-  }
 }
 
 function cls(v, warn, danger) { return v < warn ? 'good' : v < danger ? 'warning' : 'danger'; }
@@ -275,11 +236,7 @@ function setTz(tz) {
 }
 
 function renderTzList() {
-  const current = TIMEZONES.find(t => t.value === State.timezone);
-  const label = current ? `${current.label} ${current.name}` : State.timezone;
-  DOM.tzValue.textContent = current ? current.name : State.timezone;
-  DOM.tzSub.textContent = current ? current.label : '';
-
+  renderTzDisplay();
   DOM.tzPanel.innerHTML = TIMEZONES.map(t => {
     const active = t.value === State.timezone ? ' active' : '';
     return `<div class="tz-item${active}" data-tz="${t.value}">${t.label} ${t.name}</div>`;
@@ -290,17 +247,27 @@ function renderTzList() {
   });
 }
 
-function toggleTzPanel() {
-  DOM.tzPanel.classList.toggle('open');
+function renderTzDisplay() {
+  const current = TIMEZONES.find(t => t.value === State.timezone);
+  const label = current ? `${current.label} ${current.name}` : State.timezone;
+  DOM.tzDisplay.textContent = `时区: ${label} ▾`;
 }
 
 // 点击外部关闭面板
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('#tzCard') && !e.target.closest('.tz-panel')) {
+  if (!e.target.closest('.tz-selector')) {
     DOM.tzPanel.classList.remove('open');
   }
   if (!e.target.closest('.ntp-selector') && !e.target.closest('.ntp-panel')) {
     DOM.ntpPanel.classList.remove('open');
+  }
+});
+
+// 点击时区标签打开面板
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.tz-label')) {
+    DOM.tzPanel.classList.toggle('open');
+    if (DOM.tzPanel.classList.contains('open')) renderTzList();
   }
 });
 
@@ -320,7 +287,6 @@ function renderLoop() {
     const d = new Date(now);
     const ms = String(d.getMilliseconds()).padStart(3, '0');
 
-    // 使用时区格式化
     const tzParts = getTzParts(now);
     DOM.hours.textContent = tzParts.h;
     DOM.mins.textContent = tzParts.m;
@@ -334,7 +300,6 @@ function renderLoop() {
     }
     DOM.ms.textContent = `.${ms}`;
 
-    // UTC 显示
     DOM.utcDisplay.textContent = `UTC: ${d.toISOString().replace('T', ' ').substring(0, 23)}`;
   }
   requestAnimationFrame(renderLoop);
@@ -361,7 +326,6 @@ function getTzParts(timestamp) {
   }
 }
 
-// ── 窗口控制 ──
 if (window.electronAPI) {
   document.getElementById('btnMinimize').onclick = () => window.electronAPI.minimize();
   document.getElementById('btnMaximize').onclick = () => window.electronAPI.maximize();
@@ -370,7 +334,6 @@ if (window.electronAPI) {
   document.querySelector('.titlebar')?.remove();
 }
 
-// ── 初始化 ──
 initTimezone();
 connect();
 requestAnimationFrame(renderLoop);
