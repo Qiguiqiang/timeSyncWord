@@ -1,5 +1,5 @@
 #!/bin/bash
-# Generate self-signed SSL certificates for TimeSyncWord
+# Generate self-signed SSL certificates for OpenTimeSync
 # Usage: ./scripts/generate-ssl.sh
 
 CERT_DIR="$(dirname "$0")/../certs"
@@ -19,7 +19,7 @@ openssl req -x509 -nodes -newkey rsa:4096 \
   -keyout "$KEY" \
   -out "$CERT" \
   -days "$DAYS" \
-  -subj "/C=CN/ST=State/L=City/O=TimeSyncWord/CN=localhost" \
+  -subj "/C=CN/ST=State/L=City/O=OpenTimeSync/CN=localhost" \
   -addext "subjectAltName=DNS:localhost,DNS:*.local,IP:127.0.0.1"
 
 if [ $? -eq 0 ]; then

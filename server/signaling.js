@@ -1,17 +1,21 @@
 const WebSocket = require('ws');
 const timeService = require('./time-service');
+const { ntpServers } = require('./config');
 
 let broadcastInterval = null;
 
 function handleConnection(wss) {
-  // 广播模式：每2秒主动推送时间给所有客户端
   broadcastInterval = setInterval(() => {
     if (wss.clients.size === 0) return;
 
+    const status = timeService.getSyncStatus();
     const timeMsg = JSON.stringify({
       type: 'time',
       serverTime: timeService.getServerTimeMs(),
-      t2: Date.now()
+      t2: Date.now(),
+      ntpServer: status.activeServer,
+      ntpRtt: status.activeRtt,
+      serverLatencies: status.serverLatencies
     });
 
     wss.clients.forEach(client => {
@@ -22,14 +26,16 @@ function handleConnection(wss) {
   }, 2000);
 
   wss.on('connection', (ws) => {
-    // 新客户端连接时，立即发送一次当前时间
+    const status = timeService.getSyncStatus();
     ws.send(JSON.stringify({
       type: 'time',
       serverTime: timeService.getServerTimeMs(),
-      t2: Date.now()
+      t2: Date.now(),
+      ntpServer: status.activeServer,
+      ntpRtt: status.activeRtt,
+      serverLatencies: status.serverLatencies
     }));
 
-    // 处理客户端的 getTime 请求（用于 RTT 测量）
     ws.on('message', (data) => {
       try {
         const msg = JSON.parse(data);
@@ -39,6 +45,19 @@ function handleConnection(wss) {
             t1: msg.t1,
             serverTime: timeService.getServerTimeMs()
           }));
+        }
+        if (msg.type === 'setNtpServer') {
+          const changed = timeService.setActiveServer(msg.server);
+          if (changed) {
+            timeService.syncWithNTP();
+            const status = timeService.getSyncStatus();
+            ws.send(JSON.stringify({
+              type: 'ntpServerChanged',
+              ntpServer: status.activeServer,
+              ntpRtt: status.activeRtt,
+              serverLatencies: status.serverLatencies
+            }));
+          }
         }
       } catch (e) {}
     });

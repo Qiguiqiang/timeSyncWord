@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  timesyncword:
+  opentimesync:
     build: .
-    container_name: timesyncword
+    container_name: opentimesync
     restart: unless-stopped
     ports:
       - "13013:13013"

@@ -1,4 +1,4 @@
-# TimeSyncWord
+# OpenTimeSync
 
 Browser-based high-precision time synchronization tool via NTP-weighted clock.
 
@@ -26,54 +26,21 @@ NTP Servers (UDP) → Server (Node.js) → WebSocket Broadcast → Client (Brows
 
 ## Quick Start
 
-### Prerequisites
-
-- **Node.js** 18+ (recommended: 20 LTS)
-- **npm** 9+
-
-### Local Development
-
 ```bash
-# 1. Clone repository
-git clone https://github.com/Qiguiqiang/timeSyncWord.git
-cd timeSyncWord
-
-# 2. Install dependencies
+# Install dependencies
 npm install
 
-# 3. Start server
+# Start server
 npm start
 
-# 4. Open browser
+# Open browser
 # http://localhost:13013
-```
-
-### Environment Variables
-
-Create `.env` file (optional):
-
-```bash
-PORT=13013                    # HTTP port
-SSL_ENABLED=false             # Enable HTTPS
-SSL_PORT=13014                # HTTPS port
-SSL_KEY_PATH=./certs/server.key
-SSL_CERT_PATH=./certs/server.crt
-```
-
-### Generate SSL Certificate (for HTTPS)
-
-```bash
-# Windows (PowerShell)
-.\scripts\generate-ssl.sh
-
-# Linux/Mac
-bash scripts/generate-ssl.sh
 ```
 
 ## Project Structure
 
 ```
-TimeSyncWord/
+OpenTimeSync/
 ├── server/
 │   ├── index.js           # Server entry (HTTP + WebSocket)
 │   ├── config.js          # NTP servers, sync parameters
@@ -83,6 +50,9 @@ TimeSyncWord/
 │   ├── index.html         # Main page
 │   ├── css/style.css      # Cyberpunk dark theme
 │   └── js/app.js          # Client sync + timezone + UI
+├── electron/
+│   ├── main.js            # Electron main process
+│   └── preload.js         # Preload script
 ├── Dockerfile             # Multi-stage Docker build
 ├── docker-compose.yml     # Docker orchestration
 └── README.md
@@ -102,34 +72,15 @@ TimeSyncWord/
 
 ## Docker Deployment
 
-### Quick Start
-
 ```bash
-# Build and run in background
+# Build and run
 docker-compose up -d
 
 # View logs
-docker logs -f timesyncword
+docker logs -f opentimesync
 
 # Stop
 docker-compose down
-```
-
-### Build Image Only
-
-```bash
-docker build -t timesyncword .
-docker run -d -p 13013:13013 --name timesyncword timesyncword
-```
-
-### Custom Configuration
-
-```bash
-# Override port
-PORT=8080 docker-compose up -d
-
-# With SSL
-SSL_ENABLED=true docker-compose up -d
 ```
 
 ## Configuration

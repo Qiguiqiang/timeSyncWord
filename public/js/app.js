@@ -4,18 +4,21 @@ const DOM = {
   secs: document.getElementById('timeSecs'),
   ms: document.getElementById('currentMs'),
   utcDisplay: document.getElementById('utcDisplay'),
-  tzDisplay: document.getElementById('tzDisplay'),
   offsetDisplay: document.getElementById('offsetDisplay'),
-  rttDisplay: document.getElementById('rttDisplay'),
   offsetValue: document.getElementById('offsetValue'),
-  rttValue: document.getElementById('rttValue'),
   precisionTier: document.getElementById('precisionTier'),
   precisionError: document.getElementById('precisionError'),
   sampleCount: document.getElementById('sampleCount'),
-  ntpCount: document.getElementById('ntpCount'),
   statusDot: document.getElementById('statusDot'),
   statusLabel: document.getElementById('statusLabel'),
-  tzPanel: document.getElementById('tzPanel')
+  tzPanel: document.getElementById('tzPanel'),
+  tzValue: document.getElementById('tzValue'),
+  tzSub: document.getElementById('tzSub'),
+  tzCard: document.getElementById('tzCard'),
+  ntpName: document.getElementById('ntpName'),
+  ntpRttLabel: document.getElementById('ntpRttLabel'),
+  ntpPanel: document.getElementById('ntpPanel'),
+  ntpSelector: document.getElementById('ntpSelector')
 };
 
 const TIMEZONES = [
@@ -35,6 +38,14 @@ const TIMEZONES = [
   { value: 'Australia/Sydney', label: 'UTC+11', name: 'Sydney' }
 ];
 
+const NTP_SERVERS = [
+  { host: 'ntp.tencent.com', name: 'Tencent', label: '腾讯云' },
+  { host: 'ntp.aliyun.com', name: 'Aliyun', label: '阿里云' },
+  { host: 'time.asia.apple.com', name: 'Apple', label: 'Apple Asia' },
+  { host: 'time.google.com', name: 'Google', label: 'Google' },
+  { host: 'pool.ntp.org', name: 'Pool', label: 'pool.ntp.org' }
+];
+
 const State = {
   ws: null,
   offset: 0,
@@ -46,7 +57,9 @@ const State = {
   offsetStd: 0,
   rtt: 0,
   timezone: '',
-  ntpServerCount: 5
+  ntpServer: 'ntp.tencent.com',
+  ntpRtt: -1,
+  serverLatencies: {}
 };
 
 // ── 标准差计算 ──
@@ -89,6 +102,7 @@ function connect() {
     const msg = JSON.parse(e.data);
     if (msg.type === 'time') handleTime(msg);
     if (msg.type === 'timeResponse') handleTimeResponse(msg);
+    if (msg.type === 'ntpServerChanged') handleNtpChange(msg);
   };
 
   State.ws.onclose = () => {
@@ -113,6 +127,10 @@ function handleTime(msg) {
 
   State.samples.push(offset);
   if (State.samples.length > State.maxSamples) State.samples.shift();
+
+  if (msg.ntpServer) State.ntpServer = msg.ntpServer;
+  if (msg.ntpRtt !== undefined) State.ntpRtt = msg.ntpRtt;
+  if (msg.serverLatencies) State.serverLatencies = msg.serverLatencies;
 
   calculateOffset();
   updateUI();
@@ -160,15 +178,11 @@ function getSyncTime() { return State.syncBase + (performance.now() - State.perf
 // ── UI 更新 ──
 function updateUI() {
   DOM.offsetDisplay.textContent = `DIFF: ${State.offset.toFixed(2)}ms`;
-  DOM.rttDisplay.textContent = `PING: ${State.rtt > 0 ? State.rtt + 'ms' : '--'}`;
 
   DOM.offsetValue.textContent = State.offset.toFixed(2);
   const absOffset = Math.abs(State.offset);
   DOM.offsetValue.className = 'stat-value ' + cls(absOffset, 5, 20);
-  DOM.rttValue.textContent = State.rtt > 0 ? State.rtt : '--';
-  DOM.rttValue.className = 'stat-value ' + (State.rtt > 0 ? cls(State.rtt, 50, 100) : '');
 
-  // 精度等级（基于 offsetStd）
   const tier = getPrecisionTier();
   DOM.precisionTier.textContent = tier;
   DOM.precisionTier.className = 'stat-value ' + getPrecisionClass(tier);
@@ -176,6 +190,64 @@ function updateUI() {
   DOM.sampleCount.textContent = State.samples.length;
 
   setStatus('synced', `SYNCED ±${State.offset.toFixed(1)}ms`);
+
+  // NTP 卡片 — 左边延迟大号绿色，右边服务商名+▾可切换
+  const activeNtp = NTP_SERVERS.find(s => s.host === State.ntpServer);
+  const ntpLabel = activeNtp ? activeNtp.name : State.ntpServer;
+  DOM.ntpRttLabel.textContent = State.ntpRtt > 0 ? State.ntpRtt : '--';
+  DOM.ntpRttLabel.className = 'stat-value ' + (State.ntpRtt > 0 ? cls(State.ntpRtt, 30, 100) : '');
+  DOM.ntpName.textContent = ntpLabel;
+}
+
+function getServerLabel(host) {
+  const s = NTP_SERVERS.find(s => s.host === host);
+  return s ? `${s.name} ${s.label}` : host;
+}
+
+function getNtpRttClass(rtt) {
+  if (rtt <= 0) return '';
+  if (rtt < 30) return 'ok';
+  if (rtt < 100) return 'warning';
+  return 'timeout';
+}
+
+function handleNtpChange(msg) {
+  if (msg.ntpServer) State.ntpServer = msg.ntpServer;
+  if (msg.ntpRtt !== undefined) State.ntpRtt = msg.ntpRtt;
+  if (msg.serverLatencies) State.serverLatencies = msg.serverLatencies;
+  renderNtpList();
+}
+
+// ── NTP 服务器选择器 ──
+function setNtp(host) {
+  send({ type: 'setNtpServer', server: host });
+  DOM.ntpPanel.classList.remove('open');
+}
+
+function renderNtpList() {
+  DOM.ntpPanel.innerHTML = NTP_SERVERS.map(s => {
+    const active = s.host === State.ntpServer ? ' active' : '';
+    const latency = State.serverLatencies[s.host];
+    const rtt = latency ? latency.rtt : -1;
+    const status = latency ? latency.status : 'unknown';
+    const rttText = rtt > 0 ? `${rtt}ms` : status === 'timeout' ? '超时' : '--';
+    const rttClass = getNtpRttClass(rtt);
+    return `<div class="ntp-item${active}" data-ntp="${s.host}">
+      <span>${s.name} ${s.label}</span>
+      <span class="ntp-item-rtt ${rttClass}">${rttText}</span>
+    </div>`;
+  }).join('');
+
+  DOM.ntpPanel.querySelectorAll('.ntp-item').forEach(el => {
+    el.addEventListener('click', () => setNtp(el.dataset.ntp));
+  });
+}
+
+function toggleNtpPanel() {
+  DOM.ntpPanel.classList.toggle('open');
+  if (DOM.ntpPanel.classList.contains('open')) {
+    renderNtpList();
+  }
 }
 
 function cls(v, warn, danger) { return v < warn ? 'good' : v < danger ? 'warning' : 'danger'; }
@@ -198,12 +270,15 @@ function setTz(tz) {
   localStorage.setItem('timesync-tz', tz);
   DOM.tzPanel.classList.remove('open');
   renderTzList();
+  State.syncBase = Date.now() + State.offset;
+  State.perfBase = performance.now();
 }
 
 function renderTzList() {
   const current = TIMEZONES.find(t => t.value === State.timezone);
   const label = current ? `${current.label} ${current.name}` : State.timezone;
-  DOM.tzDisplay.textContent = label;
+  DOM.tzValue.textContent = current ? current.name : State.timezone;
+  DOM.tzSub.textContent = current ? current.label : '';
 
   DOM.tzPanel.innerHTML = TIMEZONES.map(t => {
     const active = t.value === State.timezone ? ' active' : '';
@@ -219,10 +294,21 @@ function toggleTzPanel() {
   DOM.tzPanel.classList.toggle('open');
 }
 
-// 点击外部关闭时区面板
+// 点击外部关闭面板
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.tz-selector')) {
+  if (!e.target.closest('#tzCard') && !e.target.closest('.tz-panel')) {
     DOM.tzPanel.classList.remove('open');
+  }
+  if (!e.target.closest('.ntp-selector') && !e.target.closest('.ntp-panel')) {
+    DOM.ntpPanel.classList.remove('open');
+  }
+});
+
+// 点击 NTP 选择器打开面板
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.ntp-selector')) {
+    DOM.ntpPanel.classList.toggle('open');
+    if (DOM.ntpPanel.classList.contains('open')) renderNtpList();
   }
 });
 
@@ -273,6 +359,15 @@ function getTzParts(timestamp) {
       s: String(d.getSeconds()).padStart(2, '0')
     };
   }
+}
+
+// ── 窗口控制 ──
+if (window.electronAPI) {
+  document.getElementById('btnMinimize').onclick = () => window.electronAPI.minimize();
+  document.getElementById('btnMaximize').onclick = () => window.electronAPI.maximize();
+  document.getElementById('btnClose').onclick = () => window.electronAPI.close();
+} else {
+  document.querySelector('.titlebar')?.remove();
 }
 
 // ── 初始化 ──

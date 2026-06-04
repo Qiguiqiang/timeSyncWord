@@ -1,5 +1,5 @@
 const dgram = require('dgram');
-const { ntpServers, sync } = require('./config');
+const { ntpServers, sync, defaultServer } = require('./config');
 
 class TimeService {
   constructor() {
@@ -7,14 +7,25 @@ class TimeService {
     this.ntpOffsets = [];
     this.isSynced = false;
     this.lastSyncTime = 0;
+    this.activeServer = defaultServer;
+    this.serverLatencies = {};
+    ntpServers.forEach(s => { this.serverLatencies[s.host] = { rtt: -1, status: 'unknown' }; });
   }
 
-  // Get current server time in milliseconds
   getServerTimeMs() {
     return Date.now();
   }
 
-  // Query a single NTP server
+  setActiveServer(host) {
+    if (ntpServers.some(s => s.host === host)) {
+      this.activeServer = host;
+      this.isSynced = false;
+      this.ntpOffsets = [];
+      return true;
+    }
+    return false;
+  }
+
   async queryNTP(server) {
     return new Promise((resolve, reject) => {
       const client = dgram.createSocket('udp4');
@@ -23,9 +34,8 @@ class TimeService {
         reject(new Error(`NTP timeout: ${server}`));
       }, 2000);
 
-      // NTP packet (48 bytes)
       const packet = Buffer.alloc(48);
-      packet[0] = 0x1b; // LI=0, VN=3, Mode=3 (client)
+      packet[0] = 0x1b;
 
       const T1 = Date.now();
 
@@ -41,13 +51,10 @@ class TimeService {
         clearTimeout(timeout);
         const T4 = Date.now();
 
-        // Parse NTP response - receive timestamp (bytes 32-39) and transmit timestamp (bytes 40-47)
         const T2 = this.parseNTPTimestamp(msg, 32);
         const T3 = this.parseNTPTimestamp(msg, 40);
 
-        // Calculate offset: offset = ((T2-T1) + (T3-T4)) / 2
         const offset = ((T2 - T1) + (T3 - T4)) / 2;
-        // Calculate RTT: RTT = (T4-T1) - (T3-T2)
         const rtt = (T4 - T1) - (T3 - T2);
 
         client.close();
@@ -62,85 +69,68 @@ class TimeService {
     });
   }
 
-  // Parse NTP timestamp from packet
-  // NTP timestamp: 32-bit seconds since 1900 + 32-bit fractions
   parseNTPTimestamp(packet, offset) {
     const seconds = packet.readUInt32BE(offset);
     const fractions = packet.readUInt32BE(offset + 4);
-    
-    // Convert to milliseconds
-    // NTP epoch is 1900-01-01, Unix epoch is 1970-01-01
-    // Difference is 70 years in seconds = 2208988800
     const ntpEpoch = 2208988800;
     const unixSeconds = seconds - ntpEpoch;
     const milliseconds = unixSeconds * 1000 + (fractions * 1000) / 0x100000000;
-    
     return milliseconds;
   }
 
-  // Remove outliers from samples
   removeOutliers(samples, threshold) {
     if (samples.length < 3) return samples;
-    
     const sorted = [...samples].sort((a, b) => a.rtt - b.rtt);
     const cutoff = Math.floor(samples.length * threshold);
-    
-    return sorted.slice(cutoff, sorted.length - cutoff);
+    return sorted.slice(cutoff, samples.length - cutoff);
   }
 
-  // Calculate weighted average offset
   weightedAverage(samples) {
     if (samples.length === 0) return 0;
-    
     let totalWeight = 0;
     let weightedSum = 0;
-    
     for (const sample of samples) {
-      const weight = 1 / (sample.rtt + 1); // Higher weight for lower RTT
+      const weight = 1 / (sample.rtt + 1);
       totalWeight += weight;
       weightedSum += sample.offset * weight;
     }
-    
     return weightedSum / totalWeight;
   }
 
-  // Sync with all NTP servers
   async syncWithNTP() {
     const allSamples = [];
-    
-    for (const server of ntpServers) {
+
+    for (const ntp of ntpServers) {
       try {
-        // Query each server multiple times
-        for (let i = 0; i < sync.samplesPerServer; i++) {
-          const sample = await this.queryNTP(server);
+        for (let i = 0; i < 1; i++) {
+          const sample = await this.queryNTP(ntp.host);
           if (Math.abs(sample.rtt) < sync.maxRTT) {
             allSamples.push(sample);
           }
         }
+        const avgRtt = allSamples.filter(s => s.server === ntp.host).reduce((sum, s, _, arr) => sum + s.rtt / arr.length, 0);
+        this.serverLatencies[ntp.host] = { rtt: Math.round(avgRtt), status: 'ok' };
       } catch (err) {
-        // Skip failed servers silently
+        this.serverLatencies[ntp.host] = { rtt: -1, status: 'timeout' };
       }
     }
 
-    if (allSamples.length === 0) {
+    const activeSamples = allSamples.filter(s => s.server === this.activeServer);
+    if (activeSamples.length === 0) {
       return false;
     }
 
-    // Remove outliers
-    const filtered = this.removeOutliers(allSamples, sync.outlierThreshold);
-    
-    // Calculate final offset (in milliseconds)
+    const filtered = this.removeOutliers(activeSamples, sync.outlierThreshold);
     this.serverTime = this.weightedAverage(filtered);
     this.ntpOffsets = filtered.map(s => s.offset);
     this.isSynced = true;
     this.lastSyncTime = Date.now();
 
-    console.log(`NTP synced: ${filtered.length} samples, offset: ${this.serverTime.toFixed(2)}ms`);
     return true;
   }
 
-  // Get sync status for dashboard
   getSyncStatus() {
+    const activeLatency = this.serverLatencies[this.activeServer] || { rtt: -1 };
     return {
       isSynced: this.isSynced,
       lastSyncTime: this.lastSyncTime,
@@ -148,7 +138,10 @@ class TimeService {
       sampleCount: this.ntpOffsets.length,
       avgOffset: this.ntpOffsets.length > 0 
         ? this.ntpOffsets.reduce((a, b) => a + b, 0) / this.ntpOffsets.length 
-        : 0
+        : 0,
+      activeServer: this.activeServer,
+      activeRtt: activeLatency.rtt,
+      serverLatencies: this.serverLatencies
     };
   }
 }

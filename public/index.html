@@ -3,18 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>TimeSyncWord</title>
+  <title>OpenTimeSync</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div class="titlebar">
+    <div class="titlebar-title">OpenTimeSync</div>
+    <div class="titlebar-controls">
+      <button class="tb-btn" id="btnMinimize">─</button>
+      <button class="tb-btn" id="btnMaximize">□</button>
+      <button class="tb-btn tb-close" id="btnClose">✕</button>
+    </div>
+  </div>
   <div class="scanlines"></div>
   <div class="grid-overlay"></div>
 
   <div class="container">
     <header class="header">
-      <h1 class="logo">TimeSyncWord</h1>
       <div class="status" id="statusBar">
         <span class="status-dot" id="statusDot"></span>
         <span class="status-label" id="statusLabel">INITIALIZING</span>
@@ -33,17 +40,7 @@
       <div class="time-meta">
         <span class="meta-item" id="utcDisplay" data-tooltip="协调世界时（UTC），国际标准时间参考">UTC: --</span>
         <span class="meta-divider">|</span>
-        <div class="tz-selector" id="tzSelector">
-          <span class="meta-item tz-label" id="tzDisplay" data-tooltip="点击切换时区">UTC+8 Shanghai</span>
-          <div class="tz-panel" id="tzPanel"></div>
-        </div>
-        <span class="meta-divider">|</span>
         <span class="meta-item" id="offsetDisplay" data-tooltip="服务器时间与客户端时间的差值（含网络延迟）">DIFF: --</span>
-        <span class="meta-divider">|</span>
-        <span class="meta-item" id="rttDisplay" data-tooltip="服务器与客户端之间的网络往返时间（每30秒测量一次）">PING: --</span>
-      </div>
-      <div class="time-info">
-        <span class="info-item" id="ntpCount" data-tooltip="服务端查询的NTP时间源服务器数量，用于校准服务器时钟">NTP: 5 servers</span>
       </div>
     </div>
 
@@ -61,10 +58,23 @@
         <div class="stat-value" id="offsetValue">--</div>
         <div class="stat-unit">ms</div>
       </div>
-      <div class="stat-card" data-tooltip="服务器与客户端之间的网络往返时间（RTT），每30秒测量一次。延迟越小，同步越准确">
+      <div class="stat-card ntp-card" id="ntpCard" data-tooltip="点击切换NTP时间源服务器">
         <div class="stat-label">网络延迟</div>
-        <div class="stat-value" id="rttValue">--</div>
-        <div class="stat-unit">ms</div>
+        <div class="ntp-row">
+          <span class="stat-value" id="ntpRttLabel">--</span>
+          <span class="stat-unit ntp-unit">ms</span>
+          <span class="ntp-selector" id="ntpSelector">
+            <span class="ntp-current" id="ntpName">--</span>
+            <span class="ntp-arrow">▾</span>
+          </span>
+        </div>
+        <div class="ntp-panel" id="ntpPanel"></div>
+      </div>
+      <div class="stat-card tz-card" id="tzCard" data-tooltip="点击切换时区">
+        <div class="stat-label">时区</div>
+        <div class="stat-value" id="tzValue">--</div>
+        <div class="stat-unit" id="tzSub">--</div>
+        <div class="tz-panel" id="tzPanel"></div>
       </div>
       <div class="stat-card" data-tooltip="最近20次同步测量的样本缓冲区。样本越多，抗网络波动能力越强">
         <div class="stat-label">采样</div>

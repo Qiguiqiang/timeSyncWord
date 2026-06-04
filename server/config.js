@@ -9,15 +9,17 @@ module.exports = {
   },
 
   ntpServers: [
-    'ntp.aliyun.com',
-    'ntp.tencent.com',
-    'time.asia.apple.com',
-    'time.google.com',
-    'pool.ntp.org'
+    { host: 'ntp.tencent.com', name: 'Tencent', label: '腾讯云' },
+    { host: 'ntp.aliyun.com', name: 'Aliyun', label: '阿里云' },
+    { host: 'time.asia.apple.com', name: 'Apple', label: 'Apple Asia' },
+    { host: 'time.google.com', name: 'Google', label: 'Google' },
+    { host: 'pool.ntp.org', name: 'Pool', label: 'pool.ntp.org' }
   ],
 
+  defaultServer: 'ntp.tencent.com',
+
   sync: {
-    samplesPerServer: 10,
+    samplesPerServer: 5,
     outlierThreshold: 0.1,
     resyncInterval: 5000,
     maxRTT: 500
