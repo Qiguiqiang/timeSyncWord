@@ -338,8 +338,7 @@ async function doInstallUpdate() {
   st.className = 'update-status downloading';
     try {
       await invokeTauri('plugin:updater|download_and_install', {
-        rid: updateAvailable.rid,
-        onEvent: null
+        rid: updateAvailable.rid
       });
   } catch (e) {
     st.textContent = '下载失败：' + (e.message || e);
