@@ -105,53 +105,26 @@ jobs:
           REPO="Qiguiqiang/OpenTimeSync"
           BASE="https://github.com/$REPO/releases/download/$TAG"
           UPDATER='{"version":"'"$VERSION"'","notes":"Auto-build","pub_date":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","platforms":{}}'
-
-          # Windows
-          for f in opentimesync-windows-latest-x86_64-pc-windows-msvc/msi/*.msi; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f")
-            sigfile="$(dirname "$f")/${name}.sig"
-            sig=$(cat "$sigfile" 2>/dev/null || echo "")
-            UPDATER=$(echo "$UPDATER" | jq \
-              --arg url "$BASE/$name" \
-              --arg sig "$sig" \
-              '.platforms["windows-x86_64"] = {"signature": $sig, "url": $url}')
-          done
-
-          # macOS Intel
-          for f in opentimesync-macos-latest-x86_64-apple-darwin/dmg/*.dmg; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f")
-            sigfile="$(dirname "$f")/${name}.sig"
-            sig=$(cat "$sigfile" 2>/dev/null || echo "")
-            UPDATER=$(echo "$UPDATER" | jq \
-              --arg url "$BASE/$name" \
-              --arg sig "$sig" \
-              '.platforms["darwin-x86_64"] = {"signature": $sig, "url": $url}')
-          done
-
-          # macOS ARM
-          for f in opentimesync-macos-latest-aarch64-apple-darwin/dmg/*.dmg; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f")
-            sigfile="$(dirname "$f")/${name}.sig"
-            sig=$(cat "$sigfile" 2>/dev/null || echo "")
-            UPDATER=$(echo "$UPDATER" | jq \
-              --arg url "$BASE/$name" \
-              --arg sig "$sig" \
-              '.platforms["darwin-aarch64"] = {"signature": $sig, "url": $url}')
-          done
-
-          # Linux
-          for f in opentimesync-ubuntu-latest-x86_64-unknown-linux-gnu/deb/*.deb; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f")
-            sigfile="$(dirname "$f")/${name}.sig"
-            sig=$(cat "$sigfile" 2>/dev/null || echo "")
-            UPDATER=$(echo "$UPDATER" | jq \
-              --arg url "$BASE/$name" \
-              --arg sig "$sig" \
-              '.platforms["linux-x86_64"] = {"signature": $sig, "url": $url}')
+          for d in opentimesync-*/; do
+            dir="${d%/}"
+            case "$dir" in
+              *windows*) plat="windows-x86_64" ;;
+              *ubuntu*) plat="linux-x86_64" ;;
+              *x86_64-apple*) plat="darwin-x86_64" ;;
+              *aarch64-apple*) plat="darwin-aarch64" ;;
+              *) plat="unknown" ;;
+            esac
+            for f in "$dir"/*/*.msi "$dir"/*/*.dmg "$dir"/*/*.deb "$dir"/*/*.AppImage; do
+              [ -f "$f" ] || continue
+              bf=$(basename "$f")
+              sigfile="$(dirname "$f")/${bf}.sig"
+              sig=$(cat "$sigfile" 2>/dev/null || echo "")
+              UPDATER=$(echo "$UPDATER" | jq \
+                --arg url "$BASE/$bf" \
+                --arg sig "$sig" \
+                --arg plat "$plat" \
+                '.platforms[$plat] = {"signature": $sig, "url": $url}')
+            done
           done
 
           echo "$UPDATER" | jq . > updater.json
