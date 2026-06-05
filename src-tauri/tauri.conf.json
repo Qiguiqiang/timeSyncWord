@@ -34,5 +34,13 @@
       "icons/icon.ico",
       "icons/icon.icns"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEFEQ0YwNUVGRjYyRTc1NTkKUldSWmRTNzI3d1hQcmZ6TFhsbStzUXZST0NQM0ZGalBRK0ttclFwRThwQ1RUbU45Q3RhbExqcUsK",
+      "endpoints": ["https://github.com/Qiguiqiang/OpenTimeSync/releases/latest/download/updater.json"],
+      "windows": { "installMode": "passive" }
+    }
   }
 }

@@ -24,7 +24,10 @@ const DOM = {
   btnSyncNow: document.getElementById('btnSyncNow'),
   chkAutoSync: document.getElementById('chkAutoSync'),
   syncInterval: document.getElementById('syncInterval'),
-  syncStatus: document.getElementById('syncStatus')
+  syncStatus: document.getElementById('syncStatus'),
+  versionNum: document.getElementById('versionNum'),
+  btnCheckUpdate: document.getElementById('btnCheckUpdate'),
+  updateStatus: document.getElementById('updateStatus')
 };
 
 const TIMEZONES = [
@@ -284,6 +287,66 @@ DOM.syncInterval.addEventListener('change', () => {
   DOM.syncInterval.value = Math.max(5, Math.min(3600, val));
   invokeTauri('set_sync_interval', { seconds: DOM.syncInterval.value }).catch(() => {});
 });
+
+let appVersion = '';
+invokeTauri('get_version').then(v => {
+  appVersion = v;
+  DOM.versionNum.textContent = 'v' + v;
+}).catch(() => { DOM.versionNum.textContent = '--'; });
+
+let updateAvailable = null;
+async function doCheckUpdate() {
+  const btn = DOM.btnCheckUpdate, st = DOM.updateStatus;
+  btn.disabled = true;
+  st.textContent = '检查中...';
+  st.className = 'update-status checking';
+  try {
+    const updater = window.__TAURI_INTERNALS__.plugins?.updater;
+    if (!updater) throw new Error('updater not available');
+    const result = await updater.check();
+    if (result.shouldUpdate && result.manifest?.version) {
+      updateAvailable = result;
+      st.textContent = '新版本 v' + result.manifest.version + ' 可用，点击下载安装';
+      st.className = 'update-status ready';
+      btn.textContent = '下载并安装';
+      btn.onclick = doInstallUpdate;
+    } else {
+      updateAvailable = null;
+      st.textContent = '已是最新版本';
+      st.className = 'update-status';
+      btn.textContent = '检查更新';
+      btn.onclick = doCheckUpdate;
+    }
+  } catch (e) {
+    st.textContent = '检查失败：' + (e.message || e);
+    st.className = 'update-status error';
+    btn.textContent = '检查更新';
+    btn.onclick = doCheckUpdate;
+  }
+  btn.disabled = false;
+}
+async function doInstallUpdate() {
+  const btn = DOM.btnCheckUpdate, st = DOM.updateStatus;
+  if (!updateAvailable) return;
+  btn.disabled = true;
+  btn.classList.add('installing');
+  btn.textContent = '下载中...';
+  st.textContent = '正在下载更新...';
+  st.className = 'update-status downloading';
+  try {
+    const updater = window.__TAURI_INTERNALS__.plugins?.updater;
+    if (!updater) throw new Error('updater not available');
+    await updater.downloadAndInstall(updateAvailable);
+  } catch (e) {
+    st.textContent = '下载失败：' + (e.message || e);
+    st.className = 'update-status error';
+    btn.textContent = '检查更新';
+    btn.onclick = doCheckUpdate;
+    btn.classList.remove('installing');
+    btn.disabled = false;
+  }
+}
+DOM.btnCheckUpdate.addEventListener('click', doCheckUpdate);
 
 let lastSec = -1, lastMin = -1, lastHour = -1;
 function animatePulse(el) {

@@ -238,6 +238,11 @@ fn start_drag(window: tauri::Window) {
     let _ = window.start_dragging();
 }
 
+#[tauri::command]
+fn get_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
 fn run_ntp_loop(app_handle: tauri::AppHandle, app_state: Arc<AppState>) {
     std::thread::spawn(move || {
         loop {
@@ -341,9 +346,11 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .invoke_handler(tauri::generate_handler![
             ping,
+            get_version,
             sync_system_time,
             set_auto_sync,
             get_auto_sync,
