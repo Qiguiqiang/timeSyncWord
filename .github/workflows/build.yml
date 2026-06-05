@@ -72,7 +72,7 @@ jobs:
       - name: Build Tauri bundle
         run: npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
       - name: Sign bundles
-        if: env.SIGN_KEY != ''
+        if: false
         env:
           SIGN_KEY: ${{ secrets.UPDATE_PRIVATE_KEY }}
         run: |
