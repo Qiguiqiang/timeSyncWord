@@ -45,7 +45,6 @@ const NTP_SERVERS = [
 ];
 
 const State = {
-  ws: null,
   offset: 0,
   samples: [],
   maxSamples: 20,
@@ -84,46 +83,18 @@ function getPrecisionClass(tier) {
   return 'danger';
 }
 
-function connect() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  State.ws = new WebSocket(`${proto}//${location.host}`);
-
-  State.ws.onopen = () => {
-    setStatus('connecting', 'CONNECTED');
-  };
-
-  State.ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    if (msg.type === 'time') handleTime(msg);
-    if (msg.type === 'ntpServerChanged') handleNtpChange(msg);
-  };
-
-  State.ws.onclose = () => {
-    setStatus('error', 'DISCONNECTED');
-    setTimeout(connect, 3000);
-  };
-
-  State.ws.onerror = () => {};
-}
-
-function send(data) {
-  if (State.ws && State.ws.readyState === WebSocket.OPEN) {
-    State.ws.send(JSON.stringify(data));
-  }
-}
-
 function handleTime(msg) {
-  const T2 = msg.serverTime;
+  const T2 = msg.server_time;
   const T3 = Date.now();
   const offset = T2 - T3;
 
   State.samples.push(offset);
   if (State.samples.length > State.maxSamples) State.samples.shift();
 
-  State.ntpOffset = msg.ntpOffset !== undefined ? msg.ntpOffset : 0;
-  if (msg.ntpServer) State.ntpServer = msg.ntpServer;
-  if (msg.ntpRtt !== undefined) State.ntpRtt = msg.ntpRtt;
-  if (msg.serverLatencies) State.serverLatencies = msg.serverLatencies;
+  State.ntpOffset = msg.ntp_offset !== undefined ? msg.ntp_offset : 0;
+  if (msg.ntp_server) State.ntpServer = msg.ntp_server;
+  if (msg.ntp_rtt !== undefined) State.ntpRtt = msg.ntp_rtt;
+  if (msg.server_latencies) State.serverLatencies = msg.server_latencies;
 
   calculateOffset();
   updateUI();
@@ -168,11 +139,6 @@ function updateUI() {
   DOM.ntpName.textContent = ntpLabel;
 }
 
-function getServerLabel(host) {
-  const s = NTP_SERVERS.find(s => s.host === host);
-  return s ? `${s.name} ${s.label}` : host;
-}
-
 function getNtpRttClass(rtt) {
   if (rtt <= 0) return '';
   if (rtt < 30) return 'ok';
@@ -181,14 +147,20 @@ function getNtpRttClass(rtt) {
 }
 
 function handleNtpChange(msg) {
-  if (msg.ntpServer) State.ntpServer = msg.ntpServer;
-  if (msg.ntpRtt !== undefined) State.ntpRtt = msg.ntpRtt;
-  if (msg.serverLatencies) State.serverLatencies = msg.serverLatencies;
+  if (msg.ntp_server) State.ntpServer = msg.ntp_server;
+  if (msg.ntp_rtt !== undefined) State.ntpRtt = msg.ntp_rtt;
+  if (msg.server_latencies) State.serverLatencies = msg.server_latencies;
   renderNtpList();
 }
 
 function setNtp(host) {
-  send({ type: 'setNtpServer', server: host });
+  if (window.__TAURI__) {
+    window.__TAURI__.core.invoke('set_ntp_server', { server: host }).then(() => {
+      State.ntpServer = host;
+      State.samples = [];
+      renderNtpList();
+    });
+  }
   DOM.ntpPanel.classList.remove('open');
 }
 
@@ -218,7 +190,6 @@ function setStatus(state, label) {
   DOM.statusLabel.textContent = label;
 }
 
-// ── 时区功能 ──
 function initTimezone() {
   const saved = localStorage.getItem('timesync-tz');
   const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -253,7 +224,6 @@ function renderTzDisplay() {
   DOM.tzDisplay.textContent = `时区: ${label} ▾`;
 }
 
-// 点击外部关闭面板
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.tz-selector')) {
     DOM.tzPanel.classList.remove('open');
@@ -263,7 +233,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// 点击时区标签打开面板
 document.addEventListener('click', (e) => {
   if (e.target.closest('.tz-label')) {
     DOM.tzPanel.classList.toggle('open');
@@ -271,7 +240,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// 点击 NTP 选择器打开面板
 document.addEventListener('click', (e) => {
   if (e.target.closest('.ntp-selector')) {
     DOM.ntpPanel.classList.toggle('open');
@@ -279,7 +247,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ── 渲染循环 ──
 let lastSec = -1;
 function renderLoop() {
   if (State.isSynced) {
@@ -326,14 +293,26 @@ function getTzParts(timestamp) {
   }
 }
 
-if (window.electronAPI) {
-  document.getElementById('btnMinimize').onclick = () => window.electronAPI.minimize();
-  document.getElementById('btnMaximize').onclick = () => window.electronAPI.maximize();
-  document.getElementById('btnClose').onclick = () => window.electronAPI.close();
-} else {
-  document.querySelector('.titlebar')?.remove();
+function setupTitlebar() {
+  if (window.__TAURI__) {
+    const { invoke } = window.__TAURI__.core;
+    document.getElementById('btnMinimize').onclick = () => invoke('minimize_window');
+    document.getElementById('btnMaximize').onclick = () => invoke('maximize_window');
+    document.getElementById('btnClose').onclick = () => invoke('close_window');
+  } else {
+    document.querySelector('.titlebar')?.remove();
+  }
+}
+
+function listenToNtpEvents() {
+  if (window.__TAURI__) {
+    window.__TAURI__.event.listen('ntp-time', (event) => {
+      handleTime(event.payload);
+    });
+  }
 }
 
 initTimezone();
-connect();
+setupTitlebar();
+listenToNtpEvents();
 requestAnimationFrame(renderLoop);

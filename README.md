@@ -10,7 +10,9 @@
 
 Cross-platform high-precision time synchronization desktop app via NTP-weighted clock.
 
-Built with Electron + Node.js — runs on **Windows, macOS, Linux**.
+Built with **Tauri + Rust** — runs on **Windows, macOS, Linux**. Native WebView2 (no bundled Chromium).
+
+> **~5MB** binary, compared to ~200MB for Electron — instant startup, minimal resource usage.
 
 ## Features
 
@@ -29,56 +31,57 @@ Get the latest build from [GitHub Releases](https://github.com/Qiguiqiang/timeSy
 
 | Platform | File | Type |
 |----------|------|------|
-| Windows | `OpenTimeSync-*-Setup.exe` | Installer |
-| Windows | `OpenTimeSync-*-Portable.exe` | Portable (no install) |
-| Windows | `OpenTimeSync-*-win32-x64.zip` | ZIP archive |
-| macOS | `OpenTimeSync-*.dmg` | DMG installer |
-| Linux | `OpenTimeSync-*.AppImage` | Portable (no install) |
+| Windows | `OpenTimeSync_*_x64_en-US.msi` | MSI Installer |
+| macOS | `OpenTimeSync_*.dmg` | DMG Installer |
 | Linux | `opentimesync_*_amd64.deb` | Deb package |
+| Linux | `OpenTimeSync_*.AppImage` | Portable (no install) |
 
 ## Quick Start (Development)
 
+### Prerequisites
+
+- [Rust](https://rustup.rs/) (stable)
+- [Node.js](https://nodejs.org/) (22+)
+
+Linux additionally requires:
 ```bash
-# Install dependencies
-npm install
-
-# Start server-only mode (browser)
-npm start
-# Open http://localhost:13013
-
-# Start Electron desktop app
-npm run electron
+sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
+  libayatana-appindicator3-dev librsvg2-dev patchelf
 ```
 
-## Build
+### Run
 
 ```bash
-# Package for current platform
-npm run build:win     # Windows
-npm run build:mac     # macOS
-npm run build:linux   # Linux
-npm run build:all     # All platforms
+npm install
+npm run dev
+```
+
+### Build
+
+```bash
+npm run build
+# Output: src-tauri/target/release/bundle/
 ```
 
 ## Project Structure
 
 ```
 OpenTimeSync/
-├── server/              # Backend (Express + WebSocket + NTP)
-│   ├── index.js         # HTTP server + WebSocket setup
-│   ├── config.js        # NTP servers, ports, sync params
-│   ├── time-service.js  # NTP weighted sync engine
-│   └── signaling.js     # WebSocket broadcast + NTP selector
-├── public/              # Frontend UI
-│   ├── index.html       # Main page
-│   ├── css/style.css    # Cyberpunk theme
-│   └── js/app.js        # Time sync + NTP/TZ selectors
-├── electron/            # Desktop shell
-│   ├── main.js          # Electron main process
-│   └── preload.js       # Security preload script
-├── build/               # App icons (SVG/PNG/ICO)
-├── .github/workflows/   # CI/CD: auto-build Win/Mac/Linux
-└── package.json         # Dependencies + build config
+├── src-tauri/            # Rust backend (Tauri + NTP)
+│   ├── src/
+│   │   ├── main.rs       # Tauri entry point
+│   │   ├── lib.rs        # Commands, sync loop, event system
+│   │   └── ntp.rs        # NTP protocol (UDP, offset/RTT calculation)
+│   ├── Cargo.toml        # Rust dependencies
+│   ├── tauri.conf.json   # Window config, bundle settings
+│   └── capabilities/     # Tauri v2 permission grants
+├── public/               # Frontend UI
+│   ├── index.html        # Main page
+│   ├── css/style.css     # Cyberpunk theme
+│   └── js/app.js         # Time sync + NTP/TZ selectors
+├── build/                # App icons (PNG/SVG)
+├── .github/workflows/    # CI/CD: auto-build Win/Mac/Linux
+└── package.json          # Tauri CLI dependency
 ```
 
 ## Precision Grades
@@ -102,26 +105,30 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-GitHub Actions compiles Windows (NSIS + Portable + ZIP), macOS (DMG), and Linux (AppImage + deb) automatically.
+GitHub Actions compiles Windows (MSI), macOS (DMG), and Linux (deb + AppImage).
 
 ## Architecture
 
 ```
-NTP Server (selected) → Local Node.js → WebSocket → Electron Window
+NTP Server (selected) → Rust (tokio UDP) → Tauri Event → System WebView
                               ↓
                      NTP offset + RTT displayed in UI
 ```
 
-All processing is local — no external server dependency.
+All processing is local — no external server dependency. The Rust backend handles
+NTP queries via raw UDP sockets, calculates offset and RTT, and pushes time updates
+to the frontend via Tauri's event system.
 
 ## Configuration
 
-Edit `server/config.js`:
-- `port`: HTTP port (default 13013)
-- `ntpServers`: Available NTP server list
-- `defaultServer`: Default selected NTP server
-- `sync.samplesPerServer`: Samples per NTP server
-- `sync.resyncInterval`: NTP resync interval (ms)
+NTP servers and sync parameters are defined in `src-tauri/src/lib.rs`:
+
+| Constant | Default | Description |
+|----------|---------|-------------|
+| `NTP_SERVERS` | 5 servers | Available NTP server list |
+| First server | ntp.tencent.com | Default active server |
+| Sync interval | 2 seconds | NTP query interval |
+| Timeout | 2 seconds | Per-query UDP timeout |
 
 ---
 
@@ -131,7 +138,9 @@ Edit `server/config.js`:
 
 基于 NTP 加权时钟的高精度时间同步跨平台桌面应用。
 
-基于 Electron + Node.js 构建，支持 **Windows、macOS、Linux**。
+基于 **Tauri + Rust** 构建，支持 **Windows、macOS、Linux**，使用系统原生 WebView2（不内嵌 Chromium）。
+
+> **~5MB** 二进制文件，对比 Electron 约 200MB——瞬间启动、极低资源占用。
 
 ## 功能特性
 
@@ -150,56 +159,57 @@ Edit `server/config.js`:
 
 | 平台 | 文件 | 类型 |
 |----------|------|------|
-| Windows | `OpenTimeSync-*-Setup.exe` | 安装包 |
-| Windows | `OpenTimeSync-*-Portable.exe` | 便携版（无需安装） |
-| Windows | `OpenTimeSync-*-win32-x64.zip` | ZIP 压缩包 |
-| macOS | `OpenTimeSync-*.dmg` | DMG 安装包 |
-| Linux | `OpenTimeSync-*.AppImage` | 便携版（无需安装） |
+| Windows | `OpenTimeSync_*_x64_en-US.msi` | MSI 安装包 |
+| macOS | `OpenTimeSync_*.dmg` | DMG 安装包 |
 | Linux | `opentimesync_*_amd64.deb` | Deb 包 |
+| Linux | `OpenTimeSync_*.AppImage` | 便携版（无需安装） |
 
 ## 快速开始（开发模式）
 
+### 环境要求
+
+- [Rust](https://rustup.rs/)（stable）
+- [Node.js](https://nodejs.org/)（22+）
+
+Linux 额外依赖：
 ```bash
-# 安装依赖
-npm install
-
-# 仅启动服务端（浏览器访问）
-npm start
-# 打开 http://localhost:13013
-
-# 启动 Electron 桌面应用
-npm run electron
+sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
+  libayatana-appindicator3-dev librsvg2-dev patchelf
 ```
 
-## 本地打包
+### 运行
 
 ```bash
-# 打包当前平台
-npm run build:win     # Windows
-npm run build:mac     # macOS
-npm run build:linux   # Linux
-npm run build:all     # 全平台
+npm install
+npm run dev
+```
+
+### 打包
+
+```bash
+npm run build
+# 输出: src-tauri/target/release/bundle/
 ```
 
 ## 项目结构
 
 ```
 OpenTimeSync/
-├── server/              # 后端（Express + WebSocket + NTP）
-│   ├── index.js         # HTTP 服务 + WebSocket
-│   ├── config.js        # NTP 服务器、端口、同步参数
-│   ├── time-service.js  # NTP 加权同步引擎
-│   └── signaling.js     # WebSocket 广播 + NTP 选择器
-├── public/              # 前端 UI
-│   ├── index.html       # 主页面
-│   ├── css/style.css    # 赛博朋克主题
-│   └── js/app.js        # 时间同步 + NTP/时区选择器
-├── electron/            # 桌面壳
-│   ├── main.js          # Electron 主进程
-│   └── preload.js       # 安全预加载脚本
-├── build/               # 应用图标（SVG/PNG/ICO）
-├── .github/workflows/   # CI/CD: 自动编译 Win/Mac/Linux
-└── package.json         # 依赖 + 构建配置
+├── src-tauri/            # Rust 后端（Tauri + NTP）
+│   ├── src/
+│   │   ├── main.rs       # Tauri 入口
+│   │   ├── lib.rs        # 命令、同步循环、事件系统
+│   │   └── ntp.rs        # NTP 协议（UDP、偏差/RTT 计算）
+│   ├── Cargo.toml        # Rust 依赖
+│   ├── tauri.conf.json   # 窗口配置、打包设置
+│   └── capabilities/     # Tauri v2 权限授权
+├── public/               # 前端 UI
+│   ├── index.html        # 主页面
+│   ├── css/style.css     # 赛博朋克主题
+│   └── js/app.js         # 时间同步 + NTP/时区选择器
+├── build/                # 应用图标（PNG/SVG）
+├── .github/workflows/    # CI/CD: 自动编译 Win/Mac/Linux
+└── package.json          # Tauri CLI 依赖
 ```
 
 ## 精度等级
@@ -223,26 +233,29 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-GitHub Actions 自动编译 Windows（NSIS + 便携版 + ZIP）、macOS（DMG）和 Linux（AppImage + deb）。
+GitHub Actions 自动编译 Windows（MSI）、macOS（DMG）和 Linux（deb + AppImage）。
 
 ## 架构
 
 ```
-选择的 NTP 服务器 → 本地 Node.js → WebSocket → Electron 窗口
+选择的 NTP 服务器 → Rust（tokio UDP）→ Tauri 事件 → 系统 WebView
                               ↓
                      显示 NTP 偏差 + RTT 延迟
 ```
 
-所有处理在本地完成，无需外部服务器。
+所有处理在本地完成，无需外部服务器。Rust 后端通过原始 UDP socket 执行 NTP 查询，
+计算偏差和 RTT，通过 Tauri 事件系统向前端推送时间更新。
 
 ## 配置
 
-编辑 `server/config.js`：
-- `port`：HTTP 端口（默认 13013）
-- `ntpServers`：可用 NTP 服务器列表
-- `defaultServer`：默认 NTP 服务器
-- `sync.samplesPerServer`：每个 NTP 服务器的采样数
-- `sync.resyncInterval`：NTP 重新同步间隔（毫秒）
+NTP 服务器和同步参数在 `src-tauri/src/lib.rs` 中定义：
+
+| 常量 | 默认值 | 说明 |
+|----------|---------|-------------|
+| `NTP_SERVERS` | 5 台服务器 | 可用 NTP 服务器列表 |
+| 第一台 | ntp.tencent.com | 默认 NTP 服务器 |
+| 同步间隔 | 2 秒 | NTP 查询间隔 |
+| 超时 | 2 秒 | 单次 UDP 超时 |
 
 ## 许可证
 

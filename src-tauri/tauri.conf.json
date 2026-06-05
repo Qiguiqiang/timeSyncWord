@@ -1,0 +1,37 @@
+{
+  "productName": "OpenTimeSync",
+  "version": "1.0.0",
+  "identifier": "com.opentimesync.desktop",
+  "build": {
+    "frontendDist": "../public",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "OpenTimeSync",
+        "width": 800,
+        "height": 500,
+        "minWidth": 600,
+        "minHeight": 400,
+        "decorations": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ]
+  }
+}
