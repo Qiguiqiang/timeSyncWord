@@ -12,9 +12,27 @@
   <div class="titlebar" data-tauri-drag-region>
     <div class="titlebar-title">OpenTimeSync</div>
     <div class="titlebar-controls">
+      <button class="tb-btn" id="btnSettings">⚙</button>
       <button class="tb-btn" id="btnMinimize">─</button>
       <button class="tb-btn" id="btnMaximize">□</button>
       <button class="tb-btn tb-close" id="btnClose">✕</button>
+    </div>
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-group">
+        <div class="settings-title">系统时间同步</div>
+        <button class="sync-btn" id="btnSyncNow">立即同步到系统</button>
+        <label class="sync-toggle">
+          <input type="checkbox" id="chkAutoSync">
+          <span>自动同步</span>
+        </label>
+        <div class="sync-interval-row">
+          <span>间隔</span>
+          <input type="number" id="syncInterval" min="5" max="3600" value="30">
+          <span>秒</span>
+        </div>
+        <hr class="sync-divider">
+        <div class="sync-status" id="syncStatus"></div>
+      </div>
     </div>
   </div>
   <div class="scanlines"></div>

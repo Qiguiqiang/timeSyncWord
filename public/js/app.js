@@ -1,3 +1,5 @@
+function dbg(msg) { console.log('[TS]', msg); }
+
 const DOM = {
   hours: document.getElementById('timeHours'),
   mins: document.getElementById('timeMins'),
@@ -16,7 +18,13 @@ const DOM = {
   ntpName: document.getElementById('ntpName'),
   ntpRttLabel: document.getElementById('ntpRttLabel'),
   ntpPanel: document.getElementById('ntpPanel'),
-  ntpSelector: document.getElementById('ntpSelector')
+  ntpSelector: document.getElementById('ntpSelector'),
+  btnSettings: document.getElementById('btnSettings'),
+  settingsPanel: document.getElementById('settingsPanel'),
+  btnSyncNow: document.getElementById('btnSyncNow'),
+  chkAutoSync: document.getElementById('chkAutoSync'),
+  syncInterval: document.getElementById('syncInterval'),
+  syncStatus: document.getElementById('syncStatus')
 };
 
 const TIMEZONES = [
@@ -84,14 +92,13 @@ function getPrecisionClass(tier) {
 }
 
 function handleTime(msg) {
-  const T2 = msg.server_time;
-  const T3 = Date.now();
-  const offset = T2 - T3;
+  if (!msg || typeof msg.ntp_offset === 'undefined') return;
+  const offset = msg.ntp_offset;
 
   State.samples.push(offset);
   if (State.samples.length > State.maxSamples) State.samples.shift();
 
-  State.ntpOffset = msg.ntp_offset !== undefined ? msg.ntp_offset : 0;
+  State.ntpOffset = offset;
   if (msg.ntp_server) State.ntpServer = msg.ntp_server;
   if (msg.ntp_rtt !== undefined) State.ntpRtt = msg.ntp_rtt;
   if (msg.server_latencies) State.serverLatencies = msg.server_latencies;
@@ -130,7 +137,7 @@ function updateUI() {
   DOM.offsetValue.textContent = offsetText;
   DOM.offsetValue.className = 'stat-value ' + cls(Math.abs(State.ntpOffset), 5, 20);
 
-  setStatus('synced', `SYNCED ±${State.offset.toFixed(1)}ms`);
+  setStatus('synced', `已同步 偏移 ${State.ntpOffset.toFixed(1)}ms 精度 ±${State.offsetStd.toFixed(1)}ms`);
 
   const activeNtp = NTP_SERVERS.find(s => s.host === State.ntpServer);
   const ntpLabel = activeNtp ? activeNtp.name : State.ntpServer;
@@ -154,13 +161,11 @@ function handleNtpChange(msg) {
 }
 
 function setNtp(host) {
-  if (window.__TAURI__) {
-    window.__TAURI__.core.invoke('set_ntp_server', { server: host }).then(() => {
-      State.ntpServer = host;
-      State.samples = [];
-      renderNtpList();
-    });
-  }
+  invokeTauri('set_ntp_server', { server: host }).then(() => {
+    State.ntpServer = host;
+    State.samples = [];
+    renderNtpList();
+  }).catch(() => {});
   DOM.ntpPanel.classList.remove('open');
 }
 
@@ -247,7 +252,45 @@ document.addEventListener('click', (e) => {
   }
 });
 
-let lastSec = -1;
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#btnSettings')) {
+    DOM.settingsPanel.classList.toggle('open');
+  } else if (!e.target.closest('.settings-panel')) {
+    DOM.settingsPanel.classList.remove('open');
+  }
+});
+
+DOM.btnSyncNow.addEventListener('click', async () => {
+  DOM.btnSyncNow.disabled = true;
+  DOM.syncStatus.textContent = '同步中...';
+  try {
+    const res = await invokeTauri('sync_system_time');
+    DOM.syncStatus.textContent = res;
+    DOM.syncStatus.style.color = 'var(--green)';
+  } catch (e) {
+    DOM.syncStatus.textContent = e.message || '同步失败';
+    DOM.syncStatus.style.color = 'var(--red)';
+  }
+  DOM.btnSyncNow.disabled = false;
+  setTimeout(() => { DOM.syncStatus.textContent = ''; }, 5000);
+});
+
+DOM.chkAutoSync.addEventListener('change', () => {
+  invokeTauri('set_auto_sync', { enabled: DOM.chkAutoSync.checked }).catch(() => {});
+});
+
+DOM.syncInterval.addEventListener('change', () => {
+  const val = parseInt(DOM.syncInterval.value) || 30;
+  DOM.syncInterval.value = Math.max(5, Math.min(3600, val));
+  invokeTauri('set_sync_interval', { seconds: DOM.syncInterval.value }).catch(() => {});
+});
+
+let lastSec = -1, lastMin = -1, lastHour = -1;
+function animatePulse(el) {
+  el.classList.remove('pulse');
+  void el.offsetWidth;
+  el.classList.add('pulse');
+}
 function renderLoop() {
   if (State.isSynced) {
     const now = getSyncTime();
@@ -255,16 +298,19 @@ function renderLoop() {
     const ms = String(d.getMilliseconds()).padStart(3, '0');
 
     const tzParts = getTzParts(now);
-    DOM.hours.textContent = tzParts.h;
-    DOM.mins.textContent = tzParts.m;
+    const hStr = tzParts.h, mStr = tzParts.m;
     const sec = parseInt(tzParts.s);
+    const min = parseInt(mStr);
+    const hour = parseInt(hStr);
+
+    DOM.hours.textContent = hStr;
+    DOM.mins.textContent = mStr;
     DOM.secs.textContent = String(sec).padStart(2, '0');
-    if (sec !== lastSec) {
-      DOM.secs.classList.remove('pulse');
-      void DOM.secs.offsetWidth;
-      DOM.secs.classList.add('pulse');
-      lastSec = sec;
-    }
+
+    if (sec !== lastSec) { animatePulse(DOM.secs); lastSec = sec; }
+    if (min !== lastMin) { animatePulse(DOM.mins); lastMin = min; }
+    if (hour !== lastHour) { animatePulse(DOM.hours); lastHour = hour; }
+
     DOM.ms.textContent = `.${ms}`;
 
     DOM.utcDisplay.textContent = `UTC: ${d.toISOString().replace('T', ' ').substring(0, 23)}`;
@@ -293,9 +339,17 @@ function getTzParts(timestamp) {
   }
 }
 
+function invokeTauri(cmd, args) {
+  if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {
+    return window.__TAURI_INTERNALS__.invoke(cmd, args);
+  }
+  console.error('invokeTauri: No __TAURI_INTERNALS__.invoke for', cmd);
+  return Promise.reject(new Error('No Tauri IPC'));
+}
+
 function setupTitlebar() {
-  if (window.__TAURI__) {
-    const { invoke } = window.__TAURI__.core;
+  if (window.__TAURI_INTERNALS__) {
+    const invoke = window.__TAURI_INTERNALS__.invoke;
     document.getElementById('btnMinimize').onclick = () => invoke('minimize_window');
     document.getElementById('btnMaximize').onclick = () => invoke('maximize_window');
     document.getElementById('btnClose').onclick = () => invoke('close_window');
@@ -304,15 +358,68 @@ function setupTitlebar() {
   }
 }
 
-function listenToNtpEvents() {
-  if (window.__TAURI__) {
-    window.__TAURI__.event.listen('ntp-time', (event) => {
-      handleTime(event.payload);
-    });
+let ntpPollTimer = 0;
+async function pollOnce() {
+  try {
+    const msg = await invokeTauri('get_ntp_status');
+    if (msg) {
+      dbg('NTP data: offset=' + msg.ntp_offset?.toFixed(2) + ' rtt=' + msg.ntp_rtt + ' svr=' + msg.ntp_server);
+      handleTime(msg);
+      return true;
+    } else {
+      dbg('invoke OK but null data');
+    }
+  } catch (e) {
+    dbg('poll err: ' + e.message);
   }
+  return false;
 }
 
-initTimezone();
-setupTitlebar();
-listenToNtpEvents();
-requestAnimationFrame(renderLoop);
+function startNtpPolling() {
+  pollOnce().then(ok => {
+    if (!ok) dbg('First poll failed, will retry in 2s');
+  });
+  ntpPollTimer = setInterval(pollOnce, 2000);
+}
+
+function testInvoke(cmd) {
+  invokeTauri(cmd || 'get_ntp_status').then(r => {
+    dbg(cmd + ': OK ' + JSON.stringify(r).substring(0, 60));
+  }).catch(e => {
+    dbg(cmd + ': FAIL ' + e.message);
+  });
+}
+
+function cleanup() {
+  if (ntpPollTimer) clearInterval(ntpPollTimer);
+}
+
+(function init() {
+  dbg('App init starting...');
+  const internals = window.__TAURI_INTERNALS__;
+  dbg('__TAURI_INTERNALS__ = ' + (internals ? 'YES' : 'NO'));
+  if (internals) {
+    dbg('invoke type = ' + (typeof internals.invoke));
+    dbg('listen type = ' + (typeof internals.listen));
+    dbg('invoke keys = ' + Object.keys(internals).join(', '));
+  }
+
+  if (internals && typeof internals.invoke === 'function') {
+    setStatus('synced', 'Tauri IPC OK');
+    setupTitlebar();
+    initTimezone();
+    startNtpPolling();
+    setTimeout(() => testInvoke('ping'), 500);
+    setTimeout(() => testInvoke('get_cycle_count'), 1000);
+    setTimeout(() => testInvoke('get_ntp_status'), 1500);
+    invokeTauri('get_auto_sync').then(v => { DOM.chkAutoSync.checked = v; }).catch(() => {});
+    invokeTauri('get_sync_interval').then(v => { DOM.syncInterval.value = v; }).catch(() => {});
+  } else {
+    setStatus('danger', 'BROWSER MODE');
+    document.querySelector('.titlebar')?.remove();
+    initTimezone();
+  }
+  requestAnimationFrame(renderLoop);
+})();
+
+window.addEventListener('beforeunload', cleanup);

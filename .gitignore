@@ -6,3 +6,6 @@ target/
 Thumbs.db
 src-tauri/icons/
 src-tauri/gen/
+.playwright-mcp/
+serve.js
+public/js/mock.js

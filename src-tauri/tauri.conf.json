@@ -1,6 +1,6 @@
 {
   "productName": "OpenTimeSync",
-  "version": "1.0.0",
+  "version": "2.0.12",
   "identifier": "com.opentimesync.desktop",
   "build": {
     "frontendDist": "../public",
@@ -16,7 +16,8 @@
         "minWidth": 600,
         "minHeight": 400,
         "decorations": false,
-        "center": true
+        "center": true,
+        "devtools": true
       }
     ],
     "security": {

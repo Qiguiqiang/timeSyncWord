@@ -41,6 +41,11 @@ pub fn query_ntp(server: &str) -> Result<NtpSample, String> {
     let t2 = parse_ntp_timestamp(&buf, 32);
     let t3 = parse_ntp_timestamp(&buf, 40);
 
+    let now = t4 as f64;
+    if t2 < 946684800000.0 || t2 > now + 5000.0 || t3 < 946684800000.0 || t3 > now + 5000.0 {
+        return Err(format!("invalid ntp timestamp from {}", server));
+    }
+
     let offset = ((t2 - t1 as f64) + (t3 - t4 as f64)) / 2.0;
     let rtt = (t4 as f64 - t1 as f64) - (t3 - t2);
 
