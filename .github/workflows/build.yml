@@ -57,9 +57,18 @@ jobs:
       - name: Test Rust compilation
         run: |
           cd src-tauri
-          cargo check 2>&1; EC=$?
+          cargo check > ../cargo-err.log 2>&1; EC=$?
+          echo "=== Cargo output ==="
+          cat ../cargo-err.log
           echo "EXIT_CODE=$EC"
           exit $EC
+      - name: Upload cargo error log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-error-${{ matrix.os }}
+          path: cargo-err.log
+          retention-days: 1
       - name: Build Tauri bundle
         run: npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
       - name: Sign bundles
