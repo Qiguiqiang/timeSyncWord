@@ -417,10 +417,17 @@ function setupTitlebar() {
     document.getElementById('btnMaximize').onclick = () => invoke('maximize_window');
     document.getElementById('btnClose').onclick = () => invoke('close_window');
     const tb = document.querySelector('.titlebar');
-    tb.addEventListener('mousedown', (e) => {
+    let clickTimer = null;
+    tb.addEventListener('click', (e) => {
       if (e.button !== 0) return;
       if (e.target.closest('.titlebar-controls, .tb-btn, .settings-panel')) return;
-      invoke('start_drag');
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        invoke('maximize_window');
+      } else {
+        clickTimer = setTimeout(() => { clickTimer = null; }, 250);
+      }
     });
   } else {
     document.querySelector('.titlebar')?.remove();
