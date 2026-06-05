@@ -72,12 +72,12 @@ jobs:
       - name: Build Tauri bundle
         run: npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
       - name: Sign bundles
-        if: false
+        if: env.SIGN_KEY != ''
         env:
           SIGN_KEY: ${{ secrets.UPDATE_PRIVATE_KEY }}
         run: |
           KEY_FILE=$(mktemp)
-          echo "$SIGN_KEY" | tr -d '\n\r' > "$KEY_FILE"
+          echo "$SIGN_KEY" > "$KEY_FILE"
           find "src-tauri/target/${{ matrix.target }}/release/bundle" -type f \( \
             -name "*.msi" -o -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" \) \
             | while read f; do
