@@ -2313,7 +2313,6 @@ name = "opentimesync"
 version = "2.0.12"
 dependencies = [
  "serde",
- "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
