@@ -59,13 +59,14 @@ jobs:
         run: |
           npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
       - name: Sign bundles
-        if: secrets.UPDATE_PRIVATE_KEY != ''
+        env:
+          SIGN_KEY: ${{ secrets.UPDATE_PRIVATE_KEY }}
+        if: env.SIGN_KEY != ''
         run: |
-          KEY="${{ secrets.UPDATE_PRIVATE_KEY }}"
           find "src-tauri/target/${{ matrix.target }}/release/bundle" -type f \( \
             -name "*.msi" -o -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" \) \
             | while read f; do
-            npx tauri signer sign -k "$KEY" "$f"
+            npx tauri signer sign -k "$SIGN_KEY" "$f"
           done
       - name: Upload bundle
         uses: actions/upload-artifact@v4
