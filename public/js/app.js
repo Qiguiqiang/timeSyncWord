@@ -303,12 +303,10 @@ async function doCheckUpdate() {
   st.textContent = '检查中...';
   st.className = 'update-status checking';
   try {
-    const updater = window.__TAURI_INTERNALS__.plugins?.updater;
-    if (!updater) throw new Error('updater not available');
-    const result = await updater.check();
-    if (result.shouldUpdate && result.manifest?.version) {
+    const result = await invokeTauri('plugin:updater|check');
+    if (result && result.version) {
       updateAvailable = result;
-      st.textContent = '新版本 v' + result.manifest.version + ' 可用，点击下载安装';
+      st.textContent = '新版本 v' + result.version + ' 可用，点击下载安装';
       st.className = 'update-status ready';
       btn.textContent = '下载并安装';
       btn.onclick = doInstallUpdate;
@@ -336,9 +334,7 @@ async function doInstallUpdate() {
   st.textContent = '正在下载更新...';
   st.className = 'update-status downloading';
   try {
-    const updater = window.__TAURI_INTERNALS__.plugins?.updater;
-    if (!updater) throw new Error('updater not available');
-    await updater.downloadAndInstall(updateAvailable);
+    await invokeTauri('plugin:updater|download_and_install', { rid: updateAvailable.rid });
   } catch (e) {
     st.textContent = '下载失败：' + (e.message || e);
     st.className = 'update-status error';
