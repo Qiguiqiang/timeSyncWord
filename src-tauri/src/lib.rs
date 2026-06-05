@@ -233,6 +233,11 @@ fn close_window(window: tauri::Window) {
     let _ = window.close();
 }
 
+#[tauri::command]
+fn start_drag(window: tauri::Window) {
+    let _ = window.start_dragging();
+}
+
 fn run_ntp_loop(app_handle: tauri::AppHandle, app_state: Arc<AppState>) {
     std::thread::spawn(move || {
         loop {
@@ -349,6 +354,7 @@ pub fn run() {
             minimize_window,
             maximize_window,
             close_window,
+            start_drag,
         ])
         .setup(move |app| {
             run_ntp_loop(app.handle().clone(), app_state.clone());

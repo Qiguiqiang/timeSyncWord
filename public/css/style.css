@@ -56,8 +56,8 @@ body {
   background: #070b14;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  -webkit-app-region: drag;
   user-select: none;
+  -webkit-user-select: none;
   padding: 0 8px;
 }
 
@@ -74,7 +74,6 @@ body {
 .titlebar-controls {
   display: flex;
   gap: 4px;
-  -webkit-app-region: no-drag;
 }
 
 .tb-btn {
