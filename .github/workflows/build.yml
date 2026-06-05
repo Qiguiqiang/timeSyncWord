@@ -55,21 +55,8 @@ jobs:
       - run: npm ci
       - name: Generate icons
         run: npx @tauri-apps/cli icon build/icon.png --output src-tauri/icons
-      - name: Check environment
-        run: |
-          echo "=== Files ==="
-          ls -la src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json public/index.html
-          echo "=== Rust ==="
-          rustc --version
-          cargo --version
-          echo "=== Node ==="
-          node --version
-          echo "=== Tauri CLI ==="
-          npx tauri --version
-      - name: Build Rust (cargo)
-        run: cargo build --release --manifest-path src-tauri/Cargo.toml --target ${{ matrix.target }}
-      - name: Build Tauri bundle
-        run: npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
+      - name: Build Tauri
+        run: npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }} --verbose
       - name: Sign bundles
         env:
           SIGN_KEY: ${{ secrets.UPDATE_PRIVATE_KEY }}
