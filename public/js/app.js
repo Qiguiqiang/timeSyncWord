@@ -341,7 +341,7 @@ async function doInstallUpdate() {
       window.__TAURI_INTERNALS__.invoke('plugin:__TAURI_CHANNEL__|create', { id }).catch(() => {});
       await invokeTauri('plugin:updater|download_and_install', {
         rid: updateAvailable.rid,
-        onEvent: { id, __TAURI_CHANNEL__: true, onmessage: null }
+        onEvent: id
       });
   } catch (e) {
     st.textContent = '下载失败：' + (e.message || e);
