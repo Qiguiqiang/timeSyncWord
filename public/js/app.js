@@ -303,7 +303,10 @@ async function doCheckUpdate() {
   st.textContent = '检查中...';
   st.className = 'update-status checking';
     try {
-      const result = await invokeTauri('plugin:updater|check');
+      const result = await Promise.race([
+        invokeTauri('plugin:updater|check', { timeout: 15000 }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('连接超时')), 20000))
+      ]);
     if (result && result.version) {
       updateAvailable = result;
       st.textContent = '新版本 v' + result.version + ' 可用，点击下载安装';
