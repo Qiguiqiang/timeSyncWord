@@ -304,7 +304,7 @@ async function doCheckUpdate() {
   st.className = 'update-status checking';
     try {
       const result = await Promise.race([
-        invokeTauri('plugin:updater|check', { timeout: 15000 }),
+        invokeTauri('plugin:updater|check', { timeout: 15000, proxy: 'http://192.168.23.4:7897' }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('连接超时')), 20000))
       ]);
     if (result && result.version) {
