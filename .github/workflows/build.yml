@@ -52,11 +52,12 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.target }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
           restore-keys: |
             ${{ matrix.os }}-${{ matrix.target }}-cargo-
+      - run: npm ci
       - name: Generate icons
         run: npx @tauri-apps/cli icon build/icon.png --output src-tauri/icons
       - name: Build Tauri
         run: |
-          cargo tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
+          npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
       - name: Upload bundle
         uses: actions/upload-artifact@v4
         with:
