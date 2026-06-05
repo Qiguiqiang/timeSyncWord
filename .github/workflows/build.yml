@@ -13,6 +13,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [x64]
+        include:
+          - os: macos-latest
+            arch: arm64
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -25,20 +29,21 @@ jobs:
       - name: Build
         run: |
           case "${{ matrix.os }}" in
-            windows*) PLAT=win32; EXT=zip;;
-            ubuntu*)  PLAT=linux; EXT=tar.gz;;
-            macos*)   PLAT=darwin; EXT=dmg;;
+            windows*) PLAT=win32;;
+            ubuntu*)  PLAT=linux;;
+            macos*)   PLAT=darwin;;
           esac
-          npx @electron/packager . OpenTimeSync --platform=$PLAT --arch=x64 --out=dist --overwrite --icon=build/icon
+          npx @electron/packager . OpenTimeSync --platform=$PLAT --arch=${{ matrix.arch }} --out=dist --overwrite --icon=build/icon
       - name: Package
         run: |
           case "${{ matrix.os }}" in
-            ubuntu*)  cd dist && tar -czf OpenTimeSync-linux-x64.tar.gz OpenTimeSync-linux-x64/ && cd ..;;
-            macos*)   cd dist && zip -r OpenTimeSync-macos.zip OpenTimeSync-darwin-x64/ && cd ..;;
+            ubuntu*)  cd dist && tar -czf OpenTimeSync-linux-${{ matrix.arch }}.tar.gz OpenTimeSync-linux-${{ matrix.arch }}/ && cd ..;;
+            windows*) cd dist && zip -r OpenTimeSync-win32-${{ matrix.arch }}.zip OpenTimeSync-win32-${{ matrix.arch }}/ && cd ..;;
+            macos*)   cd dist && zip -r OpenTimeSync-macos-${{ matrix.arch }}.zip OpenTimeSync-darwin-${{ matrix.arch }}/ && cd ..;;
           esac
       - uses: actions/upload-artifact@v4
         with:
-          name: opentimesync-${{ matrix.os }}
+          name: opentimesync-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/
           retention-days: 7
   release:
@@ -49,8 +54,9 @@ jobs:
       - uses: actions/download-artifact@v4
       - run: |
           gh release create "${{ github.ref_name }}" --title "OpenTimeSync ${{ github.ref_name }}" --generate-notes --repo ${{ github.repository }} || true
-          gh release upload "${{ github.ref_name }}" opentimesync-ubuntu-latest/*.tar.gz --clobber --repo ${{ github.repository }} || true
-          gh release upload "${{ github.ref_name }}" opentimesync-windows-latest/OpenTimeSync-win32-x64/OpenTimeSync.exe --clobber --repo ${{ github.repository }} || true
-          gh release upload "${{ github.ref_name }}" opentimesync-macos-latest/*.zip --clobber --repo ${{ github.repository }} || true
+          gh release upload "${{ github.ref_name }}" opentimesync-ubuntu-latest-x64/*.tar.gz --clobber --repo ${{ github.repository }} || true
+          gh release upload "${{ github.ref_name }}" opentimesync-windows-latest-x64/*.zip --clobber --repo ${{ github.repository }} || true
+          gh release upload "${{ github.ref_name }}" opentimesync-macos-latest-x64/*.zip --clobber --repo ${{ github.repository }} || true
+          gh release upload "${{ github.ref_name }}" opentimesync-macos-latest-arm64/*.zip --clobber --repo ${{ github.repository }} || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
