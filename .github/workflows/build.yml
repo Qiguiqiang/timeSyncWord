@@ -57,10 +57,16 @@ jobs:
         run: npx @tauri-apps/cli icon build/icon.png --output src-tauri/icons
       - name: Build Tauri
         run: |
-          LOGFILE="${{ runner.temp }}/tauri-build.log"
-          npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }} --verbose > "$LOGFILE" 2>&1 || EC=$?
-          cat "$LOGFILE"
-          test -z "$EC" || exit "$EC" 2>&1 || true
+          npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }} --verbose > tauri-build.log 2>&1 || EC=$?
+          cat tauri-build.log
+          test -z "$EC" || exit "$EC"
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-build-log-${{ matrix.os }}
+          path: tauri-build.log
+          retention-days: 1 2>&1 || true
       - name: Show error log
         if: failure()
         run: |
