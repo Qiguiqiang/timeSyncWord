@@ -5,6 +5,8 @@ on:
     tags: ['v*']
 permissions:
   contents: write
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 jobs:
   build:
     env:
@@ -57,7 +59,9 @@ jobs:
       - run: npm ci
       - name: Generate icons
         run: npx @tauri-apps/cli icon build/icon.png --output src-tauri/icons
-      - name: Build Tauri
+      - name: Build Rust
+        run: cargo build --release --manifest-path src-tauri/Cargo.toml --target ${{ matrix.target }}
+      - name: Build Tauri bundle
         run: npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
       - name: Sign bundles
         env:
