@@ -1,6 +1,6 @@
 [package]
 name = "opentimesync"
-version = "2.0.64"
+version = "2.0.67"
 edition = "2021"
 
 [lib]
