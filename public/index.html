@@ -23,13 +23,13 @@
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-group">
       <div class="settings-title">NTP同步</div>
-      <button class="sync-btn" id="btnSyncNtpNow">立即同步NTP</button>
-      <button class="sync-btn" id="btnSyncNow">立即同步到系统</button>
-      <label class="sync-toggle">
+      <button class="sync-btn" id="btnSyncNtpNow" data-tooltip="立即向当前选中的NTP服务器发起一次同步请求，并刷新延迟、偏差、精度与采样结果。不会修改系统时间。">立即同步NTP</button>
+      <button class="sync-btn" id="btnSyncNow" data-tooltip="把当前已经校正好的NTP时间写入操作系统时间。会影响整台机器的系统时钟与其他应用读取到的时间。">立即同步到系统</button>
+      <label class="sync-toggle" data-tooltip="开启后，软件会按下面设置的间隔自动刷新NTP结果。这里的自动同步只刷新NTP数据，不会自动修改系统时间。">
         <input type="checkbox" id="chkAutoSync">
         <span>自动同步NTP</span>
       </label>
-      <div class="sync-interval-row">
+      <div class="sync-interval-row" data-tooltip="自动同步NTP开启后，每隔多少秒主动向NTP服务器刷新一次数据。范围为5到3600秒。">
         <span>NTP间隔</span>
         <input type="number" id="syncInterval" min="5" max="3600" value="30">
         <span>秒</span>
@@ -39,11 +39,11 @@
     </div>
     <div class="settings-group">
       <div class="settings-title">版本与更新</div>
-      <div class="version-row" id="versionRow">
+      <div class="version-row" id="versionRow" data-tooltip="显示当前正在运行的应用版本号。这个版本号应与GitHub发布版本和安装包版本保持一致。">
         <span>当前版本：</span>
         <span class="version-num" id="versionNum">--</span>
       </div>
-      <button class="sync-btn" id="btnCheckUpdate">检查更新</button>
+      <button class="sync-btn" id="btnCheckUpdate" data-tooltip="检查是否存在比当前版本更新的发布版本。发现更新后会先下载，再进入安装并重启流程。">检查更新</button>
       <div class="update-status" id="updateStatus"></div>
     </div>
   </div>
