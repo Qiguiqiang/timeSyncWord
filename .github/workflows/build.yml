@@ -79,12 +79,17 @@ jobs:
           RUST_BACKTRACE: 1
         run: |
           cd src-tauri
-          cargo check 2>cargo-err.log && EC=0 || EC=$?
+          cargo check --target ${{ matrix.target }} >cargo-out.log 2>cargo-err.log && EC=0 || EC=$?
+          cat cargo-out.log || true
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat cargo-err.log >> "$GITHUB_STEP_SUMMARY" || true
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           echo "EXIT_CODE=$EC" >> "$GITHUB_STEP_SUMMARY"
           echo "EXIT_CODE=$EC"
+          if [[ "$EC" -ne 0 ]]; then
+            ERR_SNIPPET="$(sed -n '1,40p' cargo-err.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"
+            echo "::error::cargo check failed for ${{ matrix.target }}: ${ERR_SNIPPET}"
+          fi
           exit $EC
       - name: Build Tauri bundle
         run: npx tauri build --bundles "${{ matrix.bundles }}" --target ${{ matrix.target }}
