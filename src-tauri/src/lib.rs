@@ -882,6 +882,20 @@ fn hide_main_window_to_tray(app: &AppHandle, state: &Arc<AppState>) {
     sync_shell_surfaces(app, state);
 }
 
+fn main_window_is_visible(app: &AppHandle) -> bool {
+    app.get_webview_window(MAIN_LABEL)
+        .and_then(|window| window.is_visible().ok())
+        .unwrap_or(false)
+}
+
+fn restore_main_window_if_hidden(app: &AppHandle, state: &Arc<AppState>) {
+    if main_window_is_visible(app) {
+        sync_shell_surfaces(app, state);
+    } else {
+        let _ = restore_main_window_internal(app, state);
+    }
+}
+
 fn restore_main_window_internal(app: &AppHandle, state: &Arc<AppState>) -> Result<(), String> {
     complete_startup_ui(app, state);
     *state.collapsed_to_tray.lock().unwrap() = false;
@@ -1144,6 +1158,22 @@ fn attach_widget_window_listener(app: &AppHandle, state: Arc<AppState>) {
                 persist_widget_position(&state, position.x, position.y);
             }
         });
+    }
+}
+
+fn handle_run_event(app: &AppHandle, event: tauri::RunEvent) {
+    #[cfg(target_os = "macos")]
+    {
+        if let tauri::RunEvent::Reopen { .. } = event {
+            let state = app.state::<Arc<AppState>>().inner().clone();
+            let _ = restore_main_window_internal(app, &state);
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = app;
+        let _ = event;
     }
 }
 
@@ -1521,8 +1551,8 @@ fn dismiss_widget(app: AppHandle, state: State<'_, Arc<AppState>>) {
     *state.collapsed_to_tray.lock().unwrap() = false;
     *state.widget_force_visible.lock().unwrap() = false;
     persist_config_best_effort(state.inner());
-    sync_tray_state(&app, state.inner());
     hide_widget_window(&app, state.inner());
+    restore_main_window_if_hidden(&app, state.inner());
 }
 
 #[tauri::command]
@@ -1969,6 +1999,7 @@ pub fn run() {
             run_ntp_loop(app.handle().clone(), app_state.clone());
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(handle_run_event);
 }

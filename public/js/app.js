@@ -1050,7 +1050,7 @@ function setupInteractions() {
   DOM.widgetShell?.addEventListener('dblclick', async (event) => {
     if (!State.isWidget) return;
     event.stopPropagation();
-    if (event.target === DOM.widgetClose) return;
+    if (event.target.closest('#widgetClose')) return;
     widgetClickGuardUntil = Date.now() + 350;
     try {
       await invokeTauri('restore_main_window');
@@ -1062,15 +1062,15 @@ function setupInteractions() {
     event.preventDefault();
     try {
       State.widgetEnabled = false;
-      DOM.chkWidgetEnabled.checked = false;
       await invokeTauri('dismiss_widget');
+      if (DOM.chkWidgetEnabled) DOM.chkWidgetEnabled.checked = false;
       updateUI();
     } catch (_) {}
   });
 
   DOM.widgetShell?.addEventListener('mousedown', (event) => {
     if (!State.isWidget || event.button !== 0) return;
-    if (event.target === DOM.widgetClose) return;
+    if (event.target.closest('#widgetClose')) return;
     if (event.detail > 1) return;
     widgetClickGuardUntil = Date.now() + 350;
     DOM.widgetShell.classList.add('dragging');

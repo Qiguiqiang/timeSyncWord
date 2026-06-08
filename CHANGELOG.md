@@ -2,6 +2,12 @@
 
 All notable changes to OpenTimeSync are documented in this file.
 
+## [2.1.10] - 2026-06-08
+
+### Fixed
+- Fixed macOS Dock reopen behavior after disabling the floating widget from its `X` button, so a hidden main window is restored instead of leaving the app running with no usable surface.
+- Fixed floating widget close-button hit testing so clicking the close control cannot be misread as widget drag or restore.
+
 ## [2.1.9] - 2026-06-08
 
 ### Fixed
