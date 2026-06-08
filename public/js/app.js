@@ -91,6 +91,8 @@ const MODE_HINTS = {
   slave: '当前设备从局域网主机获取同步时间，主机异常时会沿用上次有效结果。'
 };
 
+const WIDGET_BASE_WIDTH = 172;
+
 const State = {
   isWidget: false,
   appVersion: '',
@@ -385,7 +387,10 @@ function renderNtpList() {
 
 function updateWidgetUI() {
   if (!DOM.widgetShell) return;
-  DOM.widgetShell.style.setProperty('--widget-scale-factor', String(State.widgetScale / 100));
+  const widgetScaleFactor = State.isWidget
+    ? Math.max(State.widgetScale / 100, window.innerWidth / WIDGET_BASE_WIDTH)
+    : State.widgetScale / 100;
+  DOM.widgetShell.style.setProperty('--widget-scale-factor', String(widgetScaleFactor));
 
   let badgeLabel = '未同步';
   let badgeClass = 'widget-badge idle';
@@ -1163,4 +1168,9 @@ async function initApp() {
 }
 
 window.addEventListener('beforeunload', cleanup);
+window.addEventListener('resize', () => {
+  if (State.isWidget) {
+    updateWidgetUI();
+  }
+});
 initApp();
