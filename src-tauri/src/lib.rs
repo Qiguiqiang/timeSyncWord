@@ -943,7 +943,7 @@ fn ensure_splash_window(app: &AppHandle) -> Result<(), String> {
         return Ok(());
     }
 
-    let mut splash_builder = WebviewWindowBuilder::new(
+    let splash_builder = WebviewWindowBuilder::new(
         app,
         SPLASH_LABEL,
         WebviewUrl::App("splash.html".into()),
@@ -952,12 +952,8 @@ fn ensure_splash_window(app: &AppHandle) -> Result<(), String> {
     .inner_size(760.0, 240.0)
     .resizable(false)
     .decorations(false)
-    .background_color(Color(0, 0, 0, 0));
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        splash_builder = splash_builder.transparent(true);
-    }
+    .background_color(Color(0, 0, 0, 0))
+    .transparent(true);
 
     let splash = splash_builder
         .shadow(false)
@@ -1057,18 +1053,14 @@ fn ensure_widget_window(app: &AppHandle) -> Result<(), String> {
         return Ok(());
     }
 
-    let mut widget_builder =
+    let widget_builder =
         WebviewWindowBuilder::new(app, WIDGET_LABEL, WebviewUrl::App("index.html".into()))
         .title("OpenTimeSync Widget")
         .inner_size(WIDGET_WIDTH, WIDGET_HEIGHT)
         .resizable(false)
         .decorations(false)
-        .background_color(Color(0, 0, 0, 0));
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        widget_builder = widget_builder.transparent(true);
-    }
+        .background_color(Color(0, 0, 0, 0))
+        .transparent(true);
 
     let widget = widget_builder
         .skip_taskbar(true)

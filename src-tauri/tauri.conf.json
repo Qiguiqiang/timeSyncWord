@@ -1,6 +1,6 @@
 {
   "productName": "OpenTimeSync",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "identifier": "com.opentimesync.desktop",
   "build": {
     "frontendDist": "../public",
@@ -8,6 +8,7 @@
     "beforeBuildCommand": ""
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",

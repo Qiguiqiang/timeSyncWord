@@ -2,6 +2,15 @@
 
 All notable changes to OpenTimeSync are documented in this file.
 
+## [2.1.4] - 2026-06-08
+
+### Changed
+- Enabled the macOS private API path so startup splash and floating widget windows can use true transparent overlays on macOS outside the App Store distribution path.
+
+### Fixed
+- Fixed transparent startup and widget overlays after the earlier macOS compatibility patch by restoring platform-appropriate transparent window creation for macOS as well as Windows.
+- Added a tray menu action to show or hide the floating widget directly from the tray icon right-click menu.
+
 ## [2.1.3] - 2026-06-08
 
 ### Fixed
