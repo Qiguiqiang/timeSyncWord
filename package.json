@@ -1,6 +1,6 @@
 {
   "name": "opentimesync",
-  "version": "2.1.12",
+  "version": "2.1.13",
   "description": "Desktop high-precision time synchronization via NTP-weighted clock (Tauri + Rust)",
   "author": "OpenTimeSync Contributors",
   "license": "MIT",

@@ -118,6 +118,7 @@ body.boot-active .grid-overlay {
 }
 
 .tb-btn:hover { background: rgba(0, 240, 255, 0.1); color: var(--text); }
+.tb-btn:focus-visible { outline: 1px solid rgba(0, 240, 255, 0.55); outline-offset: 1px; }
 .tb-close:hover { background: #ff3355; color: #fff; }
 
 .settings-panel {
@@ -156,9 +157,17 @@ body.boot-active .grid-overlay {
   background: var(--accent); color: #000;
   border: none; border-radius: 4px;
   font-family: var(--font-mono); font-size: 12px;
-  font-weight: 600; cursor: pointer; margin-bottom: 8px;
+  font-weight: 700; cursor: pointer; margin-bottom: 8px;
+  min-height: 34px;
+  box-shadow: 0 0 0 rgba(0, 240, 255, 0);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
 }
-.sync-btn:hover { background: var(--accent2); }
+.sync-btn:hover { background: var(--accent2); box-shadow: 0 0 16px rgba(0, 240, 255, 0.16); }
+.sync-btn:active { transform: translateY(1px); }
+.sync-btn:focus-visible {
+  outline: 1px solid rgba(224, 232, 255, 0.75);
+  outline-offset: 2px;
+}
 .sync-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .sync-toggle {
   display: flex; align-items: center; gap: 8px;
@@ -324,6 +333,7 @@ body.boot-active .grid-overlay {
 
 .update-secondary:hover {
   background: #26315d;
+  box-shadow: 0 0 16px rgba(224, 232, 255, 0.08);
 }
 
 .boot-overlay {
@@ -491,19 +501,25 @@ body.boot-active .grid-overlay {
 
 .status-label {
   font-family: var(--font-mono);
-  font-size: clamp(0.4rem, 0.8vmin, 0.75rem);
+  font-size: clamp(0.55rem, 0.95vmin, 0.85rem);
   color: var(--text-dim);
   letter-spacing: 2px;
 }
 
 /* ── Time Panel ── */
 .time-panel {
+  --clock-main-size: clamp(7rem, min(42vmin, calc(20.4vw - 1.43vmin), calc(78vh - 133px)), 42rem);
+  --clock-main-size: clamp(7rem, min(42vmin, calc(20.4vw - 1.43vmin), calc(78dvh - 133px)), 42rem);
+  --clock-colon-size: clamp(5.9rem, min(35.3vmin, calc(17.14vw - 1.2vmin), calc(65.5vh - 112px)), 35.3rem);
+  --clock-colon-size: clamp(5.9rem, min(35.3vmin, calc(17.14vw - 1.2vmin), calc(65.5dvh - 112px)), 35.3rem);
+  --clock-ms-size: clamp(3.2rem, min(19.3vmin, calc(9.38vw - 0.66vmin), calc(35.9vh - 61px)), 19.3rem);
+  --clock-ms-size: clamp(3.2rem, min(19.3vmin, calc(9.38vw - 0.66vmin), calc(35.9dvh - 61px)), 19.3rem);
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: clamp(18px, 3vmin, 36px);
+  padding: clamp(14px, 2.2vmin, 38px) clamp(16px, 2.8vmin, 50px);
   background: var(--bg-card);
   position: relative;
   overflow: hidden;
@@ -549,6 +565,9 @@ body.boot-active .grid-overlay {
   align-items: baseline;
   justify-content: center;
   user-select: none;
+  width: 100%;
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 .time-digit {
@@ -556,7 +575,7 @@ body.boot-active .grid-overlay {
   width: 2ch;
   text-align: center;
   font-family: var(--font-display);
-  font-size: clamp(5.4rem, min(27vmin, calc((100vw - 112px) / 5.45)), 13.5rem);
+  font-size: var(--clock-main-size);
   font-weight: 700;
   color: var(--text);
   text-shadow: 0 0 20px rgba(224, 232, 255, 0.15), 0 0 60px rgba(224, 232, 255, 0.05);
@@ -569,7 +588,7 @@ body.boot-active .grid-overlay {
   width: 0.5ch;
   text-align: center;
   font-family: var(--font-display);
-  font-size: clamp(4.4rem, min(23vmin, calc((100vw - 112px) / 6.2)), 11.5rem);
+  font-size: var(--clock-colon-size);
   font-weight: 700;
   color: var(--text);
   text-shadow: 0 0 20px rgba(224, 232, 255, 0.15), 0 0 60px rgba(224, 232, 255, 0.05);
@@ -578,7 +597,7 @@ body.boot-active .grid-overlay {
 
 .time-ms {
   font-family: var(--font-display);
-  font-size: clamp(2.1rem, min(12vmin, calc((100vw - 112px) / 11.5)), 6.2rem);
+  font-size: var(--clock-ms-size);
   font-weight: 700;
   color: var(--cyan);
   text-shadow: 0 0 15px var(--cyan-dim), 0 0 50px rgba(0, 240, 255, 0.12);
@@ -638,7 +657,7 @@ body.boot-active .grid-overlay {
 
 .stat-label {
   font-family: var(--font-mono);
-  font-size: clamp(0.5rem, 0.9vmin, 0.85rem);
+  font-size: clamp(0.56rem, 1.05vmin, 0.95rem);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -646,7 +665,7 @@ body.boot-active .grid-overlay {
 
 .stat-value {
   font-family: var(--font-display);
-  font-size: clamp(1.1rem, 2.2vmin, 2rem);
+  font-size: clamp(1.25rem, 2.6vmin, 2.4rem);
   font-weight: 700;
   color: var(--text);
   line-height: 1;
@@ -667,7 +686,7 @@ body.boot-active .grid-overlay {
 
 .stat-unit {
   font-family: var(--font-mono);
-  font-size: clamp(0.4rem, 0.7vmin, 0.6rem);
+  font-size: clamp(0.48rem, 0.8vmin, 0.7rem);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;

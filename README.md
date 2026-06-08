@@ -6,9 +6,9 @@ Cross-platform high-precision NTP time synchronization desktop app. **~6MB** bin
 
 | Platform | Download |
 |----------|----------|
-| Windows | `OpenTimeSync_2.1.12_x64_en-US.msi` / `OpenTimeSync_2.1.12_x64-setup.exe` |
-| macOS | `OpenTimeSync_2.1.12_x64.dmg` / `OpenTimeSync_2.1.12_aarch64.dmg` |
-| Linux | `OpenTimeSync_2.1.12_amd64.deb` / `OpenTimeSync_2.1.12_amd64.AppImage` |
+| Windows | `OpenTimeSync_2.1.13_x64_en-US.msi` / `OpenTimeSync_2.1.13_x64-setup.exe` |
+| macOS | `OpenTimeSync_2.1.13_x64.dmg` / `OpenTimeSync_2.1.13_aarch64.dmg` |
+| Linux | `OpenTimeSync_2.1.13_amd64.deb` / `OpenTimeSync_2.1.13_amd64.AppImage` |
 
 → [Latest Release](https://github.com/Qiguiqiang/OpenTimeSync/releases)
 
@@ -82,8 +82,8 @@ The Rust backend queries the selected NTP server via raw UDP, or consumes the LA
 Push a tag to trigger cross-platform builds:
 
 ```bash
-git tag v2.1.12
-git push origin v2.1.12
+git tag v2.1.13
+git push origin v2.1.13
 ```
 
 GitHub Actions produces: Windows MSI + NSIS, macOS DMG (x86_64 + aarch64), Linux deb + AppImage. A tagged release also updates GitHub Release assets and `updater.json`.
@@ -100,9 +100,9 @@ GitHub Actions produces: Windows MSI + NSIS, macOS DMG (x86_64 + aarch64), Linux
 
 | 平台 | 下载 |
 |----------|------|
-| Windows | `OpenTimeSync_2.1.12_x64_en-US.msi` / `OpenTimeSync_2.1.12_x64-setup.exe` |
-| macOS | `OpenTimeSync_2.1.12_x64.dmg` / `OpenTimeSync_2.1.12_aarch64.dmg` |
-| Linux | `OpenTimeSync_2.1.12_amd64.deb` / `OpenTimeSync_2.1.12_amd64.AppImage` |
+| Windows | `OpenTimeSync_2.1.13_x64_en-US.msi` / `OpenTimeSync_2.1.13_x64-setup.exe` |
+| macOS | `OpenTimeSync_2.1.13_x64.dmg` / `OpenTimeSync_2.1.13_aarch64.dmg` |
+| Linux | `OpenTimeSync_2.1.13_amd64.deb` / `OpenTimeSync_2.1.13_amd64.AppImage` |
 
 → [最新 Release](https://github.com/Qiguiqiang/OpenTimeSync/releases)
 
@@ -176,8 +176,8 @@ Rust 后端通过原始 UDP socket 查询 NTP 服务器，或在从机模式下�
 推送标签触发全平台编译：
 
 ```bash
-git tag v2.1.12
-git push origin v2.1.12
+git tag v2.1.13
+git push origin v2.1.13
 ```
 
 GitHub Actions 自动编译：Windows MSI + NSIS、macOS DMG（x86_64 + aarch64）、Linux deb + AppImage。推送标签时还会自动更新 GitHub Release 附件和 `updater.json`。

@@ -2,6 +2,12 @@
 
 All notable changes to OpenTimeSync are documented in this file.
 
+## [2.1.13] - 2026-06-08
+
+### Changed
+- Reworked the main clock sizing so it scales from the default window up to full-screen layouts instead of being capped at the previous fixed maximum.
+- Tightened button hover, active, focus, and update-modal secondary-button states so the main app controls read more consistently during local UI checks.
+
 ## [2.1.12] - 2026-06-08
 
 ### Changed
