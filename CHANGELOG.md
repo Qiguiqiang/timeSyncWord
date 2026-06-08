@@ -2,6 +2,16 @@
 
 All notable changes to OpenTimeSync are documented in this file.
 
+## [2.1.11] - 2026-06-08
+
+### Changed
+- Replaced remote Google font loading with local system font stacks so the app typography stays consistent across Windows, macOS, Linux, and offline installs.
+- Reduced the main clock and stat number size ceilings to keep the time display stable after upgrades.
+
+### Fixed
+- Fixed an updater self-deadlock when starting a download, which could freeze the app before progress polling began.
+- Improved updater modal state handling so download/install buttons and progress text update immediately after the user starts an update.
+
 ## [2.1.10] - 2026-06-08
 
 ### Fixed

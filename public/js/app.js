@@ -624,6 +624,9 @@ function renderUpdateStatus(status) {
   State.currentUpdatePhase = status.phase || 'idle';
   DOM.updateStatus.textContent = status.message || '';
   DOM.updateStatus.className = updateStatusClass(status.phase);
+  DOM.btnCheckUpdate.classList.remove('installing');
+  DOM.btnUpdateNow.classList.remove('installing');
+  DOM.btnUpdateNow.disabled = false;
   renderUpdateProgress(status);
 
   if (status.phase === 'checking') {
@@ -632,12 +635,16 @@ function renderUpdateStatus(status) {
     }
     DOM.btnCheckUpdate.disabled = true;
     DOM.btnCheckUpdate.textContent = '检查中...';
+    DOM.btnUpdateNow.disabled = true;
+    DOM.btnUpdateNow.textContent = '检查中...';
     return;
   }
 
   if (status.phase === 'available') {
     DOM.btnCheckUpdate.disabled = false;
     DOM.btnCheckUpdate.textContent = '下载更新';
+    DOM.btnUpdateNow.disabled = false;
+    DOM.btnUpdateNow.textContent = '下载更新';
     openUpdateModal(status.version, status.notes);
     return;
   }
@@ -646,6 +653,8 @@ function renderUpdateStatus(status) {
     openUpdateModal(status.version, status.notes);
     DOM.btnCheckUpdate.disabled = true;
     DOM.btnCheckUpdate.textContent = '下载中...';
+    DOM.btnUpdateNow.disabled = true;
+    DOM.btnUpdateNow.textContent = '下载中...';
     return;
   }
 
@@ -653,6 +662,8 @@ function renderUpdateStatus(status) {
     openUpdateModal(status.version, status.notes);
     DOM.btnCheckUpdate.disabled = false;
     DOM.btnCheckUpdate.textContent = '安装并重启';
+    DOM.btnUpdateNow.disabled = false;
+    DOM.btnUpdateNow.textContent = '安装并重启';
     return;
   }
 
@@ -661,12 +672,16 @@ function renderUpdateStatus(status) {
     DOM.btnCheckUpdate.disabled = true;
     DOM.btnCheckUpdate.textContent = '即将重启...';
     DOM.btnCheckUpdate.classList.add('installing');
+    DOM.btnUpdateNow.disabled = true;
+    DOM.btnUpdateNow.textContent = '即将重启...';
+    DOM.btnUpdateNow.classList.add('installing');
     return;
   }
 
   DOM.btnCheckUpdate.disabled = false;
   DOM.btnCheckUpdate.textContent = '检查更新';
-  DOM.btnCheckUpdate.classList.remove('installing');
+  DOM.btnUpdateNow.disabled = false;
+  DOM.btnUpdateNow.textContent = '下载更新';
   if (status.phase !== 'available') {
     closeUpdateModal();
   }
@@ -686,6 +701,9 @@ async function pollUpdateStatus() {
     DOM.btnCheckUpdate.disabled = false;
     DOM.btnCheckUpdate.textContent = '检查更新';
     DOM.btnCheckUpdate.classList.remove('installing');
+    DOM.btnUpdateNow.disabled = false;
+    DOM.btnUpdateNow.textContent = '下载更新';
+    DOM.btnUpdateNow.classList.remove('installing');
   }
 }
 
@@ -716,14 +734,19 @@ async function doCheckUpdate() {
 }
 
 async function startDownloadUpdate() {
-  DOM.updateStatus.textContent = '正在准备下载更新...';
-  DOM.updateStatus.className = 'update-status downloading';
-  DOM.btnCheckUpdate.disabled = true;
-  DOM.btnCheckUpdate.textContent = '下载中...';
+  renderUpdateStatus({
+    phase: 'downloading',
+    version: DOM.updateLatestVersion.textContent.replace(/^v/, ''),
+    notes: DOM.updateNotes.textContent,
+    message: '正在准备下载更新...',
+    downloadedBytes: 0,
+    totalBytes: null
+  });
   try {
     await invokeTauri('download_available_update');
     startUpdatePolling();
   } catch (error) {
+    stopUpdatePolling();
     renderUpdateStatus({
       phase: 'error',
       message: '启动下载失败：' + (error.message || error)
@@ -732,15 +755,18 @@ async function startDownloadUpdate() {
 }
 
 async function startInstallUpdate() {
-  DOM.updateStatus.textContent = '正在准备安装，应用将自动退出并由安装器完成更新...';
-  DOM.updateStatus.className = 'update-status downloading';
-  DOM.btnCheckUpdate.disabled = true;
-  DOM.btnCheckUpdate.textContent = '即将重启...';
+  renderUpdateStatus({
+    phase: 'installing',
+    version: DOM.updateLatestVersion.textContent.replace(/^v/, ''),
+    notes: DOM.updateNotes.textContent,
+    message: '正在准备安装，应用将自动退出并由安装器完成更新...'
+  });
   try {
     await new Promise((resolve) => setTimeout(resolve, 250));
     await invokeTauri('install_downloaded_update');
     startUpdatePolling();
   } catch (error) {
+    stopUpdatePolling();
     renderUpdateStatus({
       phase: 'error',
       message: '启动安装失败：' + (error.message || error)

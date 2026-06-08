@@ -20,9 +20,9 @@
   --text-muted: #2a3a5a;
   --border: #1a2340;
   --glow: 0 0 12px var(--cyan-dim), 0 0 40px rgba(0, 240, 255, 0.06);
-  --font-display: 'Orbitron', monospace;
-  --font-body: 'Rajdhani', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'DIN Alternate', 'Bahnschrift', 'SF Pro Display', 'Segoe UI', sans-serif;
+  --font-body: 'Microsoft YaHei UI', 'PingFang SC', 'Segoe UI', sans-serif;
+  --font-mono: 'Cascadia Mono', 'SF Mono', 'Consolas', monospace;
 }
 
 html, body { height: 100%; overflow: hidden; }
@@ -31,6 +31,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
 }
 
 body.splash-only {
@@ -554,11 +555,12 @@ body.boot-active .grid-overlay {
   width: 2ch;
   text-align: center;
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, min(20vmin, calc((100vw - 8vmin) / 7)), 19rem);
+  font-size: clamp(3rem, min(13.5vmin, calc((100vw - 96px) / 8.4)), 7.5rem);
   font-weight: 700;
   color: var(--text);
   text-shadow: 0 0 20px rgba(224, 232, 255, 0.15), 0 0 60px rgba(224, 232, 255, 0.05);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .time-colon {
@@ -566,7 +568,7 @@ body.boot-active .grid-overlay {
   width: 0.5ch;
   text-align: center;
   font-family: var(--font-display);
-  font-size: clamp(2rem, min(17vmin, calc((100vw - 8vmin) / 8.5)), 16rem);
+  font-size: clamp(2.4rem, min(11.5vmin, calc((100vw - 96px) / 9.6)), 6.4rem);
   font-weight: 700;
   color: var(--text);
   text-shadow: 0 0 20px rgba(224, 232, 255, 0.15), 0 0 60px rgba(224, 232, 255, 0.05);
@@ -575,7 +577,7 @@ body.boot-active .grid-overlay {
 
 .time-ms {
   font-family: var(--font-display);
-  font-size: clamp(1.3rem, min(10vmin, calc((100vw - 8vmin) / 14)), 11rem);
+  font-size: clamp(1.2rem, min(6.5vmin, calc((100vw - 96px) / 15)), 3.8rem);
   font-weight: 700;
   color: var(--cyan);
   text-shadow: 0 0 15px var(--cyan-dim), 0 0 50px rgba(0, 240, 255, 0.12);
@@ -583,6 +585,7 @@ body.boot-active .grid-overlay {
   width: 3.5ch;
   text-align: left;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .time-meta {
@@ -642,10 +645,11 @@ body.boot-active .grid-overlay {
 
 .stat-value {
   font-family: var(--font-display);
-  font-size: clamp(1.2rem, 2.8vmin, 2.6rem);
+  font-size: clamp(1.1rem, 2.2vmin, 2rem);
   font-weight: 700;
   color: var(--text);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-value.good { color: var(--green); text-shadow: 0 0 8px var(--green-dim), 0 0 20px var(--green-dim); }

@@ -1732,6 +1732,7 @@ fn download_available_update(
     }
 
     *app_state.downloaded_update.lock().unwrap() = None;
+    let existing_notes = app_state.update_status.lock().unwrap().notes.clone();
 
     set_update_status(
         &app_state,
@@ -1739,7 +1740,7 @@ fn download_available_update(
         current_version.clone(),
         None,
         "正在准备下载安装...",
-        app_state.update_status.lock().unwrap().notes.clone(),
+        existing_notes,
         Some(0),
         None,
     );
