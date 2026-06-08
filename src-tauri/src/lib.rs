@@ -1033,6 +1033,7 @@ fn ensure_widget_window(app: &AppHandle) -> Result<(), String> {
 
     let widget = widget_builder
         .skip_taskbar(true)
+        .always_on_top(true)
         .focused(false)
         .visible(false)
         .shadow(false)

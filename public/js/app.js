@@ -132,7 +132,6 @@ let lastSec = -1;
 let lastMin = -1;
 let lastHour = -1;
 let bootTimer = 0;
-let widgetDrag = null;
 let widgetClickGuardUntil = 0;
 let widgetScalePersistTimer = 0;
 let widgetSettingsPollTimer = 0;
@@ -1072,34 +1071,18 @@ function setupInteractions() {
   DOM.widgetShell?.addEventListener('mousedown', (event) => {
     if (!State.isWidget || event.button !== 0) return;
     if (event.target === DOM.widgetClose) return;
-    widgetDrag = {
-      startX: event.clientX,
-      startY: event.clientY,
-      dragging: false
-    };
-    DOM.widgetShell.classList.add('dragging');
-  });
-
-  document.addEventListener('mousemove', (event) => {
-    if (!State.isWidget || !widgetDrag) return;
-    const dx = event.clientX - widgetDrag.startX;
-    const dy = event.clientY - widgetDrag.startY;
-    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
-    widgetDrag.dragging = true;
-    widgetDrag = null;
+    if (event.detail > 1) return;
     widgetClickGuardUntil = Date.now() + 350;
+    DOM.widgetShell.classList.add('dragging');
     invokeTauri('start_widget_drag').catch(() => {});
   });
 
   document.addEventListener('mouseup', () => {
     if (!State.isWidget) return;
     DOM.widgetShell?.classList.remove('dragging');
-    if (!widgetDrag) {
-      setTimeout(() => {
-        invokeTauri('save_widget_position').catch(() => {});
-      }, 120);
-    }
-    widgetDrag = null;
+    setTimeout(() => {
+      invokeTauri('save_widget_position').catch(() => {});
+    }, 120);
   });
 }
 

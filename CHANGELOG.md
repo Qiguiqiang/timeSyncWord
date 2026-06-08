@@ -2,6 +2,12 @@
 
 All notable changes to OpenTimeSync are documented in this file.
 
+## [2.1.8] - 2026-06-08
+
+### Fixed
+- Fixed floating widget movement by switching back to a more reliable direct native drag start path for the compact widget window.
+- Fixed floating widget z-order so the widget window is always created as top-most and is no longer easily covered by normal application windows after it is shown.
+
 ## [2.1.7] - 2026-06-08
 
 ### Fixed
